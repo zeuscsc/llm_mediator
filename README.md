@@ -17,9 +17,10 @@ pip install git+https://github.com/zeuscsc/llm_mediator.git
 ~~~
 Usage:
 ~~~python
-llm=LLM(GPT)
-llm.model_name="gpt-4-32k"
-response=llm.get_response(system,assistant,user)
+model_name="GPT-4-32k"
+model=LLM(GPT)
+model.model_class.set_model_name(model_name)
+response=model.get_response(system,assistant,user)
 ~~~
 Where `system`, `assistant`, `user` are the input text, and `response` is the output text.
 ## Set Environment Variables
@@ -34,7 +35,9 @@ $ENV:OPENAI_API_KEY="your openai key" (Nessary for GPT)
 $ENV:TECKY_API_KEY="your tecky key" (Nessary for GPT)
 ~~~
 Python:
+Create a 
 ~~~python
-OPENAI_API_KEY="your openai key" (Nessary for GPT)
-TECKY_API_KEY="your tecky key" (Nessary for GPT)
+from llm_mediator import gpt
+gpt.OPENAI_API_KEY="your openai key" (Nessary for GPT)
+gpt.TECKY_API_KEY = "your tecky key" (Nessary for GPT)
 ~~~
