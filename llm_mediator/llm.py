@@ -258,4 +258,6 @@ class LLM:
         return self.model_class.on_tokens_oversized(e,system,assistant,user)
     def set_event_listener(self,event_name:str,func:Callable[[Any], Any]):
         self.model_class.set_event_listener(event_name,func)
+    def get_conversation_response(self,messages):
+        return self.model_class.get_conversation_response(messages)
     pass
