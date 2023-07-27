@@ -174,7 +174,7 @@ class GPT(LLM_Base):
         model=self.get_model_name()
         if model is None:
             raise Exception("No API key found for OpenAI or Tecky")
-        response_cache=LLM_Base.load_conversation_cache(model,messages)
+        response_cache=self.load_conversation_cache(model,messages)
         if response_cache is not None and self.use_cache:
             if "choices" in response_cache and len(response_cache["choices"])>0 and "message" in response_cache["choices"][0] and \
                 "content" in response_cache["choices"][0]["message"]:
