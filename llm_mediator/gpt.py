@@ -110,8 +110,8 @@ class GPT(LLM_Base):
                 model=model,
                 messages=[
                         {"role": "system","content": system},
-                        {"role": "assistant","content": assistant},
-                        {"role": "user","content": user}
+                        {"role": "user","content": user},
+                        {"role": "assistant","content": assistant}
                     ],
                 temperature=0,
                 stream=True
