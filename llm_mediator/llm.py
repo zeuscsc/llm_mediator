@@ -5,7 +5,7 @@ import hashlib
 import glob
 from abc import ABC, abstractmethod
 from typing import Any, Callable, Type,Generator
-from .folders import LLM_RESPONSE_CACHE_FOLDER,LLM_STREAM_RESPONSE_CACHE_FOLDER,LLM_CONVERSATION_STREAM_CACHE_FOLDER
+from .folders import LLM_RESPONSE_CACHE_FOLDER,LLM_STREAM_RESPONSE_CACHE_FOLDER,LLM_CONVERSATION_STREAM_CACHE_FOLDER,LLM_CONVERSATION_CACHE_FOLDER
 from time import sleep
 
 ON_TOKENS_OVERSIZED="on_tokens_oversized"
@@ -66,6 +66,9 @@ class _LLM_Base(ABC):
     def save_conversation_stream_cache(model,messages,chat_cache):
         hashed_request=calculate_md5(f"{model}{json.dumps(messages)}")
         _LLM_Base.save_cache(model,hashed_request,chat_cache,LLM_CONVERSATION_STREAM_CACHE_FOLDER)
+    def save_conversation_cache(model,system,assistant,user,chat_cache):
+        hashed_request=calculate_md5(f"{model}{system}{assistant}{user}")
+        _LLM_Base.save_cache(model,hashed_request,chat_cache,LLM_CONVERSATION_CACHE_FOLDER)
     def save_cache(model,hashed_request,chat_cache,folder_path):
         matching_files = glob.glob(f"{folder_path}/{hashed_request}/*.json")
         file_index=len(matching_files)
@@ -118,6 +121,9 @@ class _LLM_Base(ABC):
         pass
     @abstractmethod
     def get_conversation_stream(self,messages)->Generator[Any,Any,None]:
+        pass
+    @abstractmethod
+    def get_conversation_response(self,messages)->str:
         pass
     def set_event_listener(self,event_name:str,func:Callable[[Any], Any]):
         if event_name=="on_chunked":
@@ -191,7 +197,17 @@ class _LLM_Base(ABC):
                 yield chat_cache
                 import shutil
                 shutil.rmtree(f"{LLM_CONVERSATION_STREAM_CACHE_FOLDER}/{hashed_request}")
-
+    def have_conversation_cache(self,model,messages:list):
+        hashed_request=calculate_md5(f"{model}{json.dumps(messages)}")
+        return os.path.exists(f"{LLM_CONVERSATION_CACHE_FOLDER}/{hashed_request}.json")
+    def load_conversation_cache(self,model,messages:list):
+        hashed_request=calculate_md5(f"{model}{json.dumps(messages)}")
+        print(f"Loading response cache for {model} model with id: {hashed_request}...")
+        if self.have_conversation_cache(model,messages):
+            with open(f"{LLM_CONVERSATION_CACHE_FOLDER}/{hashed_request}.json", "r",encoding="utf8") as chat_cache_file:
+                chat_cache = json.load(chat_cache_file)
+                return chat_cache
+        return None
     pass
 
 

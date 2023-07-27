@@ -170,4 +170,43 @@ class GPT(LLM_Base):
         else:
             response=self.get_conversation_stream_from_openai(messages)
             return response
+    def get_conversation_response(self,messages) -> str:
+        model=self.get_model_name()
+        if model is None:
+            raise Exception("No API key found for OpenAI or Tecky")
+        response_cache=LLM_Base.load_conversation_cache(model,messages)
+        if response_cache is not None and self.use_cache:
+            if "choices" in response_cache and len(response_cache["choices"])>0 and "message" in response_cache["choices"][0] and \
+                "content" in response_cache["choices"][0]["message"]:
+                response_content=response_cache["choices"][0]["message"]["content"]
+                return response_content
+        print(f"Connecting to {model} model...")
+        try:
+            completion = openai.ChatCompletion.create(
+                model=model,
+                messages=messages,
+                temperature=self.temperature,
+                # max_tokens=2048
+                )
+            LLM_Base.save_conversation_cache(model,messages,completion)
+            if len(completion.choices)==0:
+                raise Exception("Invalid Output: No choices found in completion")
+            elif "message" not in completion.choices[0]:
+                raise Exception("Invalid Output: No message found in completion")
+            elif "content" not in completion.choices[0].message:
+                raise Exception("Invalid Output: No content found in completion")
+            return completion.choices[0].message.content
+        except Exception as e:
+            print(e)
+            if detect_if_result_filtered(e):
+                LLM_Base.save_response_cache(model,messages,{ON_RESULT_FILTERED:str(e)})
+                return None
+            elif re.search(r"Invalid Output: ", str(e)) is not None:
+                return None
+            else:
+                print(f"Retrying in {self.gpt_error_delay} seconds...")
+                sleep(self.gpt_error_delay)
+                self.gpt_error_delay=self.gpt_error_delay*2
+                return self.instant.get_conversation_response(messages)
+        
     pass
