@@ -66,8 +66,8 @@ class _LLM_Base(ABC):
     def save_conversation_stream_cache(model,messages,chat_cache):
         hashed_request=calculate_md5(f"{model}{json.dumps(messages)}")
         _LLM_Base.save_cache(model,hashed_request,chat_cache,LLM_CONVERSATION_STREAM_CACHE_FOLDER)
-    def save_conversation_cache(model,system,assistant,user,chat_cache):
-        hashed_request=calculate_md5(f"{model}{system}{assistant}{user}")
+    def save_conversation_cache(model,messages,chat_cache):
+        hashed_request=calculate_md5(f"{model}{json.dumps(messages)}")
         _LLM_Base.save_cache(model,hashed_request,chat_cache,LLM_CONVERSATION_CACHE_FOLDER)
     def save_cache(model,hashed_request,chat_cache,folder_path):
         matching_files = glob.glob(f"{folder_path}/{hashed_request}/*.json")
@@ -203,8 +203,9 @@ class _LLM_Base(ABC):
     def load_conversation_cache(self,model,messages:list):
         hashed_request=calculate_md5(f"{model}{json.dumps(messages)}")
         print(f"Loading response cache for {model} model with id: {hashed_request}...")
-        if self.have_conversation_cache(model,messages):
-            with open(f"{LLM_CONVERSATION_CACHE_FOLDER}/{hashed_request}.json", "r",encoding="utf8") as chat_cache_file:
+        matching_files = glob.glob(f"{LLM_CONVERSATION_CACHE_FOLDER}/{hashed_request}/*.json")
+        if len(matching_files)>0:
+            with open(matching_files[-1], "r",encoding="utf8") as chat_cache_file:
                 chat_cache = json.load(chat_cache_file)
                 return chat_cache
         return None

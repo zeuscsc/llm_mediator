@@ -34,6 +34,10 @@ class GPT(LLM_Base):
             return GPT3_MODEL
         else:
             return None
+    def get_embedding(text:str, model:str):
+        text = text.replace("\n", " ")
+        return openai.Embedding.create(input = [text], model=model)['data'][0]['embedding']
+
 
     
     def get_model_name(self):
@@ -170,6 +174,7 @@ class GPT(LLM_Base):
         else:
             response=self.get_conversation_stream_from_openai(messages)
             return response
+    
     def get_conversation_response(self,messages) -> str:
         model=self.get_model_name()
         if model is None:
