@@ -2,6 +2,7 @@ from sentence_transformers import SentenceTransformer
 from .llm import LLM_Base
 model:SentenceTransformer=None
 class Bert(LLM_Base):
+    model=None
     def get_model_name(self):
         return "Bert"
     def set_model_name(self,model_name):
