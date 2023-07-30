@@ -8,9 +8,9 @@ class Bert(LLM_Base):
         return
     
     def get_embedding(self,sentences:str):
-        if model is None:
-            model = SentenceTransformer('sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2')
-        return model.encode(sentences)
+        if self.model is None:
+            self.model = SentenceTransformer('sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2')
+        return self.model.encode(sentences)
     
     def get_response(self,system,assistant,user):
         return
