@@ -5,3 +5,4 @@ torchaudio
 transformers
 peft
 chardet
+sentence-transformers
