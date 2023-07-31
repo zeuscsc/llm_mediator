@@ -204,7 +204,7 @@ class GPT(LLM_Base):
         except Exception as e:
             print(e)
             if detect_if_result_filtered(e):
-                LLM_Base.save_response_cache(model,messages,{ON_RESULT_FILTERED:str(e)})
+                LLM_Base.save_conversation_cache(model,messages,{ON_RESULT_FILTERED:str(e)})
                 return None
             elif re.search(r"Invalid Output: ", str(e)) is not None:
                 return None
