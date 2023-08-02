@@ -1,7 +1,7 @@
 from sentence_transformers import SentenceTransformer
 from .llm import LLM_Base
 model:SentenceTransformer=None
-class Bert(LLM_Base):
+class Embedding(LLM_Base):
     model=None
     def get_model_name(self):
         return "Bert"
@@ -10,7 +10,7 @@ class Bert(LLM_Base):
     
     def get_embedding(self,sentences:str):
         if self.model is None:
-            self.model = SentenceTransformer('sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2')
+            self.model = SentenceTransformer('intfloat/multilingual-e5-large')
         return self.model.encode(sentences)
     
     def get_response(self,system,assistant,user):
