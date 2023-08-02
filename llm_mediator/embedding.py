@@ -14,7 +14,6 @@ class Embedding(LLM_Base):
         return torch.sum(token_embeddings * input_mask_expanded, 1) / torch.clamp(input_mask_expanded.sum(1), min=1e-9)
 
 
-
     def get_model_name(self):
         return self.model_name
     def set_model_name(self,model_name):
@@ -31,7 +30,7 @@ class Embedding(LLM_Base):
         encoded_input = self.tokenizer(sentences, padding=True, truncation=True, return_tensors='pt')
         with torch.no_grad():
             model_output = self.model(**encoded_input)
-        sentence_embeddings = self.mean_pooling(model_output, encoded_input['attention_mask'])
+        sentence_embeddings = Embedding.mean_pooling(model_output, encoded_input['attention_mask'])
         return sentence_embeddings
     
     def get_response(self,system,assistant,user):
