@@ -1,16 +1,18 @@
-from sentence_transformers import SentenceTransformer
+from transformers import AutoTokenizer, AutoModel
 from .llm import LLM_Base
-model:SentenceTransformer=None
 class Embedding(LLM_Base):
-    model=None
+    model_name="intfloat/multilingual-e5-large"
+    tokenizer:AutoTokenizer=None
+    model:AutoModel=None
     def get_model_name(self):
-        return "Bert"
+        return self.model_name
     def set_model_name(self,model_name):
-        return
+        self.model_name=model_name
     
     def get_embedding(self,sentences:str):
         if self.model is None:
-            self.model = SentenceTransformer('intfloat/multilingual-e5-large')
+            self.tokenizer = AutoTokenizer.from_pretrained(self.get_model_name())
+            self.model = AutoModel.from_pretrained(self.get_model_name())
         return self.model.encode(sentences)
     
     def get_response(self,system,assistant,user):
