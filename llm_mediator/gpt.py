@@ -34,7 +34,7 @@ class GPT(LLM_Base):
             return GPT3_MODEL
         else:
             return None
-    def get_embedding(self,text:str):
+    def get_embeddings(self,text:str):
         text = text.replace("\n", " ")
         return openai.Embedding.create(input = [text], model="text-embedding-ada-002")['data'][0]['embedding']
 
