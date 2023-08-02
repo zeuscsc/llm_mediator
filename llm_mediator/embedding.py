@@ -1,15 +1,18 @@
 from transformers import AutoTokenizer, AutoModel
 from .llm import LLM_Base
+import torch
 from torch import Tensor
 import torch.nn.functional as F
 class Embedding(LLM_Base):
-    model_name="intfloat/multilingual-e5-large"
+    model_name="sentence-transformers/paraphrase-multilingual-mpnet-base-v2"
     tokenizer:AutoTokenizer=None
     model:AutoModel=None
 
-    def average_pool(last_hidden_states: Tensor,attention_mask: Tensor) -> Tensor:
-        last_hidden = last_hidden_states.masked_fill(~attention_mask[..., None].bool(), 0.0)
-        return last_hidden.sum(dim=1) / attention_mask.sum(dim=1)[..., None]
+    def mean_pooling(model_output, attention_mask):
+        token_embeddings = model_output[0] #First element of model_output contains all token embeddings
+        input_mask_expanded = attention_mask.unsqueeze(-1).expand(token_embeddings.size()).float()
+        return torch.sum(token_embeddings * input_mask_expanded, 1) / torch.clamp(input_mask_expanded.sum(1), min=1e-9)
+
 
 
     def get_model_name(self):
@@ -21,10 +24,15 @@ class Embedding(LLM_Base):
         if self.model is None:
             self.tokenizer = AutoTokenizer.from_pretrained(self.get_model_name())
             self.model = AutoModel.from_pretrained(self.get_model_name())
-        batch_dict = self.tokenizer(sentences, max_length=512, padding=True, truncation=True, return_tensors='pt')
-        outputs = self.model(**batch_dict)
-        embeddings = Embedding.average_pool(outputs.last_hidden_state, batch_dict['attention_mask'])
-        return embeddings
+        if isinstance(sentences,str):
+            sentences=[sentences]
+        for sentence in sentences:
+            sentence=f"query: {sentence}"
+        encoded_input = self.tokenizer(sentences, padding=True, truncation=True, return_tensors='pt')
+        with torch.no_grad():
+            model_output = self.model(**encoded_input)
+        sentence_embeddings = self.mean_pooling(model_output, encoded_input['attention_mask'])
+        return sentence_embeddings
     
     def get_response(self,system,assistant,user):
         return
