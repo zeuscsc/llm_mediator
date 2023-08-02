@@ -24,7 +24,7 @@ class Embedding(LLM_Base):
         batch_dict = self.tokenizer(sentences, max_length=512, padding=True, truncation=True, return_tensors='pt')
         outputs = self.model(**batch_dict)
         embeddings = Embedding.average_pool(outputs.last_hidden_state, batch_dict['attention_mask'])
-        return F.normalize(embeddings, p=2, dim=1)
+        return embeddings
     
     def get_response(self,system,assistant,user):
         return
