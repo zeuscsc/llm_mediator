@@ -5,7 +5,7 @@ from time import sleep
 import time
 import os
 import re
-import parallel_tasks_queuer
+from .parallel_tasks_queuer import build_and_execute_tasks
 
 GPT3_MODEL = "gpt-3.5-turbo"
 GPT4_MODEL = "gpt-4"
