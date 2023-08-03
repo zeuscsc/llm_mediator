@@ -5,6 +5,8 @@ import torch
 from torch import Tensor
 import torch.nn.functional as F
 
+EMBEDDING_SIZE=768
+
 class Embedding(LLM_Base):
     model_name="intfloat/multilingual-e5-large"
     tokenizer:AutoTokenizer=None

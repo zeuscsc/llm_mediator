@@ -6,11 +6,14 @@ import time
 import os
 import re
 from .parallel_tasks_queuer import build_and_execute_tasks
+import numpy as np
 
 GPT3_MODEL = "gpt-3.5-turbo"
 GPT4_MODEL = "gpt-4"
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
 TECKY_API_KEY = os.environ.get('TECKY_API_KEY')
+EMBEDDING_MODEL="text-embedding-ada-002"
+EMBEDDING_SIZE=1536
 
 ON_RESULT_FILTERED="on_result_filtered"
 
@@ -38,9 +41,19 @@ class GPT(LLM_Base):
     def get_embeddings(self,sentences:str|list[str]):
         origin_sentences_type=type(sentences)
         if origin_sentences_type.__name__=="str":
-            return openai.Embedding.create(input = [sentences], model="text-embedding-ada-002")['data'][0]['embedding']
-        return openai.Embedding.create(input = sentences, model="text-embedding-ada-002")['data'][0]['embedding']
-
+            return openai.Embedding.create(input = [sentences], model=EMBEDDING_MODEL)['data'][0]['embedding']
+        embeddings=[]
+        def split_list(input_list, n):
+            return [input_list[i:i + n] for i in range(0, len(input_list), n)]
+        def get_embeddings_parallel(sentences):
+            for embedding in openai.Embedding.create(input = sentences, model=EMBEDDING_MODEL)['data']:
+                embeddings.append(embedding['embedding'])
+        sentences_chunks=split_list(sentences,16)
+        params=[]
+        for sentences_chunk in sentences_chunks:
+            params.append([sentences_chunk])
+        build_and_execute_tasks(get_embeddings_parallel,params)
+        return np.array(embeddings)
 
     
     def get_model_name(self):
