@@ -5,6 +5,7 @@ from time import sleep
 import time
 import os
 import re
+import parallel_tasks_queuer
 
 GPT3_MODEL = "gpt-3.5-turbo"
 GPT4_MODEL = "gpt-4"
@@ -34,9 +35,11 @@ class GPT(LLM_Base):
             return GPT3_MODEL
         else:
             return None
-    def get_embeddings(self,text:str):
-        text = text.replace("\n", " ")
-        return openai.Embedding.create(input = [text], model="text-embedding-ada-002")['data'][0]['embedding']
+    def get_embeddings(self,sentences:str|list[str]):
+        origin_sentences_type=type(sentences)
+        if origin_sentences_type.__name__=="str":
+            return openai.Embedding.create(input = [sentences], model="text-embedding-ada-002")['data'][0]['embedding']
+        return openai.Embedding.create(input = sentences, model="text-embedding-ada-002")['data'][0]['embedding']
 
 
     
