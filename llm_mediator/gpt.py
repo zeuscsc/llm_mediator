@@ -133,7 +133,7 @@ class GPT(LLM_Base):
                         {"role": "user","content": user},
                         {"role": "assistant","content": assistant}
                     ],
-                temperature=0,
+                temperature=self.temperature,
                 stream=True
             )
             for chunk in response:
@@ -166,7 +166,7 @@ class GPT(LLM_Base):
             response = openai.ChatCompletion.create(
                 model=model,
                 messages=messages,
-                temperature=0,
+                temperature=self.temperature,
                 stream=True
             )
             for chunk in response:
