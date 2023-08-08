@@ -128,6 +128,9 @@ class _LLM_Base(ABC):
     @abstractmethod
     def get_embeddings(self,sentences:str|list[str]):
         pass
+    @abstractmethod
+    def get_functions_response(self,messages:str|list[str],functions:list[dict]):
+        pass
     def set_event_listener(self,event_name:str,func:Callable[[Any], Any]):
         if event_name=="on_chunked":
             self.on_chunked=func
@@ -266,4 +269,6 @@ class LLM:
         return self.model_class.get_conversation_response(messages)
     def get_embeddings(self,sentences:str|list[str]):
         return self.model_class.get_embeddings(sentences)
+    def get_functions_response(self,messages:str|list[str],functions:list[dict]):
+        return self.model_class.get_functions_response(messages,functions)
     pass

@@ -26,4 +26,6 @@ class Cache(LLM_Base):
                     "content" not in response_cache["choices"][0]["message"]):
                     return None
         return None
+    def get_functions_response(self,messages,functions):
+        return
     pass

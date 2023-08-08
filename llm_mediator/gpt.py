@@ -229,5 +229,20 @@ class GPT(LLM_Base):
                 sleep(self.gpt_error_delay)
                 self.gpt_error_delay=self.gpt_error_delay*2
                 return self.instant.get_conversation_response(messages)
-        
+
+    def get_functions_response(self,messages:str|list[str],functions:list[dict]):
+        model=self.get_model_name()
+        try:
+            response = openai.ChatCompletion.create(
+                model=model,
+                messages=messages,
+                functions=functions,
+                temperature=self.temperature
+            )
+            return response
+        except Exception as e:
+            print(e)
+            pass
+        return
+    
     pass
