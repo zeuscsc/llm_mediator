@@ -83,10 +83,11 @@ class _LLM_Base(ABC):
             json.dump(chat_cache, temp_file, ensure_ascii=False)
     def save_request_log(model,hashed_request,messages,folder_path):
         request={"messages":messages,"folder_path":folder_path,"hashed_request":hashed_request}
-        matching_files = glob.glob(f"{folder_path}_requests_logs/{hashed_request}/*.txt")
+        os.makedirs(f"{folder_path}_requests_logs", exist_ok=True)
+        matching_files = glob.glob(f"{folder_path}_requests_logs/{hashed_request}/*.json")
         file_index=len(matching_files)
-        os.makedirs(f"{folder_path}/{hashed_request}", exist_ok=True)
-        with open(f"{folder_path}/{hashed_request}/{file_index}.json", "w",encoding="utf8") as temp_file:
+        os.makedirs(f"{folder_path}_requests_logs/{hashed_request}", exist_ok=True)
+        with open(f"{folder_path}_requests_logs/{hashed_request}/{file_index}.json", "w",encoding="utf8") as temp_file:
             json.dump(request, temp_file, ensure_ascii=False)
     def delete_response_cache(model,system,assistant,user):
         _LLM_Base.delete_cache(model,system,assistant,user,LLM_RESPONSE_CACHE_FOLDER)
