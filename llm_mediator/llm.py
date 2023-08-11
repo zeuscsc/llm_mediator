@@ -59,15 +59,21 @@ class _LLM_Base(ABC):
         return None
     def save_response_cache(model,system,assistant,user,chat_cache):
         hashed_request=calculate_md5(f"{model}{system}{assistant}{user}")
+        messages=[{"role": "system","content": system},{"role": "user","content": user},{"role": "assistant","content": assistant}]
+        _LLM_Base.save_request_log(model,hashed_request,messages,LLM_RESPONSE_CACHE_FOLDER)
         _LLM_Base.save_cache(model,hashed_request,chat_cache,LLM_RESPONSE_CACHE_FOLDER)
     def save_stream_response_cache(model,system,assistant,user,chat_cache):
         hashed_request=calculate_md5(f"{model}{system}{assistant}{user}")
+        messages=[{"role": "system","content": system},{"role": "user","content": user},{"role": "assistant","content": assistant}]
+        _LLM_Base.save_request_log(model,hashed_request,messages,LLM_STREAM_RESPONSE_CACHE_FOLDER)
         _LLM_Base.save_cache(model,hashed_request,chat_cache,LLM_STREAM_RESPONSE_CACHE_FOLDER)
     def save_conversation_stream_cache(model,messages,chat_cache):
         hashed_request=calculate_md5(f"{model}{json.dumps(messages)}")
+        _LLM_Base.save_request_log(model,hashed_request,messages,LLM_CONVERSATION_STREAM_CACHE_FOLDER)
         _LLM_Base.save_cache(model,hashed_request,chat_cache,LLM_CONVERSATION_STREAM_CACHE_FOLDER)
     def save_conversation_cache(model,messages,chat_cache):
         hashed_request=calculate_md5(f"{model}{json.dumps(messages)}")
+        _LLM_Base.save_request_log(model,hashed_request,messages,LLM_CONVERSATION_CACHE_FOLDER)
         _LLM_Base.save_cache(model,hashed_request,chat_cache,LLM_CONVERSATION_CACHE_FOLDER)
     def save_cache(model,hashed_request,chat_cache,folder_path):
         matching_files = glob.glob(f"{folder_path}/{hashed_request}/*.json")
@@ -75,6 +81,13 @@ class _LLM_Base(ABC):
         os.makedirs(f"{folder_path}/{hashed_request}", exist_ok=True)
         with open(f"{folder_path}/{hashed_request}/{file_index}.json", "w",encoding="utf8") as temp_file:
             json.dump(chat_cache, temp_file, ensure_ascii=False)
+    def save_request_log(model,hashed_request,messages,folder_path):
+        request={"messages":messages,"folder_path":folder_path,"hashed_request":hashed_request}
+        matching_files = glob.glob(f"{folder_path}_requests_logs/{hashed_request}/*.txt")
+        file_index=len(matching_files)
+        os.makedirs(f"{folder_path}/{hashed_request}", exist_ok=True)
+        with open(f"{folder_path}/{hashed_request}/{file_index}.json", "w",encoding="utf8") as temp_file:
+            json.dump(request, temp_file, ensure_ascii=False)
     def delete_response_cache(model,system,assistant,user):
         _LLM_Base.delete_cache(model,system,assistant,user,LLM_RESPONSE_CACHE_FOLDER)
     def delete_stream_response_cache(model,system,assistant,user):

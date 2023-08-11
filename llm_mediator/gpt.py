@@ -224,6 +224,8 @@ class GPT(LLM_Base):
                 return None
             elif re.search(r"Invalid Output: ", str(e)) is not None:
                 return None
+            elif "Insufficient balance" in str(e):
+                raise Exception("Insufficient balance")
             else:
                 print(f"Retrying in {self.gpt_error_delay} seconds...")
                 sleep(self.gpt_error_delay)
