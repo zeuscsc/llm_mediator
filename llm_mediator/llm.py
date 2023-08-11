@@ -87,8 +87,9 @@ class _LLM_Base(ABC):
         matching_files = glob.glob(f"{folder_path}_requests_logs/{hashed_request}/*.json")
         file_index=len(matching_files)
         os.makedirs(f"{folder_path}_requests_logs/{hashed_request}", exist_ok=True)
-        with open(f"{folder_path}_requests_logs/{hashed_request}/{file_index}.json", "w",encoding="utf8") as temp_file:
-            json.dump(request, temp_file, ensure_ascii=False)
+        if file_index==0:
+            with open(f"{folder_path}_requests_logs/{hashed_request}/{file_index}.json", "w",encoding="utf8") as temp_file:
+                json.dump(request, temp_file, ensure_ascii=False)
     def delete_response_cache(model,system,assistant,user):
         _LLM_Base.delete_cache(model,system,assistant,user,LLM_RESPONSE_CACHE_FOLDER)
     def delete_stream_response_cache(model,system,assistant,user):
