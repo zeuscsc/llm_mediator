@@ -21,6 +21,7 @@ def detect_if_result_filtered(e):
     return re.search(r"The response was filtered due to the prompt triggering Azure OpenAI’s content management policy.", str(e)) is not None
 
 class GPT(LLM_Base):
+    embedding_size=EMBEDDING_SIZE
     gpt_error_delay=2
     temperature=0
 

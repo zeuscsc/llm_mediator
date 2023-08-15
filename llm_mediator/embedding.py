@@ -8,6 +8,7 @@ import torch.nn.functional as F
 EMBEDDING_SIZE=1024
 
 class Embedding(LLM_Base):
+    embedding_size=EMBEDDING_SIZE
     model_name="intfloat/multilingual-e5-large"
     tokenizer:AutoTokenizer=None
     model:AutoModel=None

@@ -234,11 +234,13 @@ class _LLM_Base(ABC):
 
 
 class LLM_Base(_LLM_Base):
+    embedding_size=None
     def __init__(self,instant:_LLM_Base) -> None:
         self.instant=instant
         pass
     pass
 class LLM:
+    
     def __init__(self,ModelClass:Type[LLM_Base],use_cache:bool=True,
                  on_each_response:Callable[[str,str,str,str,str], str]=None,
                  on_chunked:Callable[[str,str,str,str,str], str]=None) -> None:
