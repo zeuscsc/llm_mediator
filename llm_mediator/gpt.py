@@ -45,7 +45,7 @@ class GPT(LLM_Base):
             return openai.Embedding.create(input = [sentences], model=EMBEDDING_MODEL)['data'][0]['embedding']
         embeddings=[]
         def split_list(input_list, n):
-            return [input_list[i:i + n] for i in range(0, len(input_list), n)]
+            return [input_list[i:i + n] for i in range(0, len(input_list), n) if all(item is not None for item in input_list[i:i + n])]
         def get_embeddings_parallel(sentences):
             for embedding in openai.Embedding.create(input = sentences, model=EMBEDDING_MODEL)['data']:
                 embeddings.append(embedding['embedding'])
