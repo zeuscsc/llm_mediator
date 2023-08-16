@@ -4,6 +4,7 @@ from .llm import LLM_Base
 import torch
 from torch import Tensor
 import torch.nn.functional as F
+import pynvml
 
 EMBEDDING_SIZE=1024
 
@@ -23,11 +24,27 @@ class Embedding(LLM_Base):
     def set_model_name(self,model_name):
         self.model_name=model_name
     
+
+    def get_available_vram():
+        pynvml.nvmlInit()
+        handle = pynvml.nvmlDeviceGetHandleByIndex(0)
+        mem_info = pynvml.nvmlDeviceGetMemoryInfo(handle)
+        return Embedding.bytes_to_gb(mem_info.free)
+    def bytes_to_gb(size_in_bytes):
+        gb = size_in_bytes / (1024 ** 3)  # 1 GB = 1024^3 bytes
+        return gb
+    def have_available_gpu():
+        if torch.cuda.is_available():
+            return Embedding.get_available_vram()>1
+        return False
     def get_embeddings(self,sentences:str|list[str]):
         origin_sentences_type=type(sentences)
         if self.model is None:
             self.tokenizer = AutoTokenizer.from_pretrained(self.get_model_name())
-            self.model = AutoModel.from_pretrained(self.get_model_name())
+            if Embedding.have_available_gpu():
+                self.model = AutoModel.from_pretrained(self.get_model_name(),device_map="auto")
+            else:
+                self.model = AutoModel.from_pretrained(self.get_model_name())
         if origin_sentences_type.__name__=="str":
             sentences=[sentences]
         batch_dict = self.tokenizer(sentences, max_length=512, padding=True, truncation=True, return_tensors='pt')

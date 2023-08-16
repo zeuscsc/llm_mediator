@@ -6,3 +6,4 @@ transformers
 peft
 chardet
 sentence-transformers
+pynvml
