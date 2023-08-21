@@ -54,7 +54,7 @@ class GPT(LLM_Base):
         for sentences_chunk in sentences_chunks:
             params.append([sentences_chunk])
         build_and_execute_tasks(get_embeddings_parallel,params)
-        return np.array(embeddings)
+        return embeddings
 
     
     def get_model_name(self):
