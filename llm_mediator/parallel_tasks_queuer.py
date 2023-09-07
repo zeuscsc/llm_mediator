@@ -2,13 +2,13 @@ from typing import Callable, Iterator
 import time
 HEADLESS=True
 
-def build_and_execute_tasks(task:Callable,iterator:Iterator,threads_count:int=10,slience=True,waiting_time=0):
-    return build_and_execute(iterator,task,threads_count,slience,waiting_time)
-def build_and_execute(iterator:Iterator,task:Callable,threads_count:int=10,slience=True,waiting_time=0):
+def build_and_execute_tasks(task:Callable,parameters:Iterator,threads_count:int=10,slience=True,waiting_time=0):
+    return build_and_execute(parameters,task,threads_count,slience,waiting_time)
+def build_and_execute(parameters:Iterator,task:Callable,threads_count:int=10,slience=True,waiting_time=0):
     """Initialize multi-threads queue for parallel tasks
 
     Args:
-        iterator (Iterator): Tasks list for scraper. EG: URLs list waiting to be scraped.
+        parameters (Iterator): Tasks list parameters.
 
         task (Callable): Task that is going to be call.
                             When create your task, please follow the following format.
@@ -20,29 +20,35 @@ def build_and_execute(iterator:Iterator,task:Callable,threads_count:int=10,slien
 
         waiting_time (int, optional): Wait number of seconds between each threads start. Defaults to 1.
     """
-    def run_task(*args):
+    def run_task(*args, **kwargs):
         try:
             # print(args)
-            task(*args)
+            task(*args, **kwargs)
         except Exception as e:
-            print(*args,e)
+            print(e,*args, **kwargs)
     from queue import Queue
     from threading import Thread
     WORKERS_COUNT=threads_count
     queue = Queue()
     def worker():
         while True:
-            args=queue.get()
+            parameter=queue.get()
+            if isinstance(parameter,tuple) or isinstance(parameter,list):
+                args=parameter
+                kwargs={}
+            elif isinstance(parameter,dict):
+                args=[]
+                kwargs=parameter
             if not slience:
                 print(f"Running {args}")
-            run_task(*args)
+            run_task(*args, **kwargs)
             if not slience:
                 print(f"Task done.")
             queue.task_done()
     for i in range(WORKERS_COUNT):
         Thread(target=worker, daemon=True).start()
     def start():
-        for row in iterator:
+        for row in parameters:
             queue.put(row)
             time.sleep(waiting_time)
         queue.join()
