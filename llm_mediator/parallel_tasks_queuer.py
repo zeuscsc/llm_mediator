@@ -22,10 +22,9 @@ def build_and_execute(parameters:Iterator,task:Callable,threads_count:int=10,sli
     """
     def run_task(*args, **kwargs):
         try:
-            # print(args)
             task(*args, **kwargs)
         except Exception as e:
-            print(e,*args, **kwargs)
+            print(e)
     from queue import Queue
     from threading import Thread
     WORKERS_COUNT=threads_count
