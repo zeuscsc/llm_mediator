@@ -274,6 +274,33 @@ class LLM:
             return self.model_class.get_response(system,assistant,user)
         else:
             return self.on_each_response(system,assistant,user,None,self.model_class.get_response(system,assistant,user))
+    def get_json_response(self,system,assistant,user):
+        response=self.get_response(system,user,assistant)
+        try:
+            return json.loads(response)
+        except Exception as e:
+            print(e)
+            print(response)
+            return self.repair_json(response)
+    def repair_json(self,json_data, schema=None,error=None):
+        system="""Fix the following JSON string to make it valid.
+I don't need any extra description in the JSON only give me the JSON.
+"""
+        if error is not None:
+            system+="""Here is the error message during JSON validation:"""+str(error)
+        if schema is not None:
+            system+="""You can fix the JSON according to the following schema.  Here is the schema:
+"""+json.dumps(schema,ensure_ascii=False)
+        assistant="""{"""
+        user=json_data
+        response=self.get_response(system,assistant,user)
+        try:
+            return json.loads(response)
+        except Exception as e:
+            print(e)
+            print(response)
+            return self.repair_json(response, schema,e)
+    
     def get_response_stream(self,system,assistant,user):
         response=self.model_class.get_response_stream(system,assistant,user)
         return response
