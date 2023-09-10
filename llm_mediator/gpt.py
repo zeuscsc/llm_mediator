@@ -39,6 +39,11 @@ class GPT(LLM_Base):
             return GPT3_MODEL
         else:
             return None
+    def extract_text_from_generator_chunk(chunk):
+        if "choices" in chunk and len(chunk["choices"])>0 and "delta" in chunk["choices"][0] and \
+            "content" in chunk["choices"][0]["delta"]:
+            return chunk["choices"][0]["delta"]["content"]
+    
     def get_embeddings(self,sentences:str|list[str]):
         origin_sentences_type=type(sentences)
         if origin_sentences_type.__name__=="str":
