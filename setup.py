@@ -11,7 +11,7 @@ URL = 'https://github.com/zeuscsc/llm_mediator.git'
 EMAIL = 'zeuscsc@gmail.com'
 AUTHOR = 'Zeus Chiu'
 REQUIRES_PYTHON = '>=3.9.0'
-VERSION = '0.8.9'
+VERSION = '0.8.10'
 
 with open('requirements.txt') as f:
     required_packages = f.readlines()
