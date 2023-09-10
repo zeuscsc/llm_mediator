@@ -98,8 +98,7 @@ class GPT(LLM_Base):
                         {"role": "user","content": user},
                         {"role": "assistant","content": assistant}
                     ],
-                temperature=self.temperature,
-                max_tokens=32*1024
+                temperature=self.temperature
                 )
             LLM_Base.save_response_cache(model,system,assistant,user,completion)
             if len(completion.choices)==0:
@@ -135,7 +134,6 @@ class GPT(LLM_Base):
                         {"role": "assistant","content": assistant}
                     ],
                 temperature=self.temperature,
-                max_tokens=32*1024,
                 stream=True
             )
             for chunk in response:
@@ -169,7 +167,6 @@ class GPT(LLM_Base):
                 model=model,
                 messages=messages,
                 temperature=self.temperature,
-                max_tokens=32*1024,
                 stream=True
             )
             for chunk in response:
@@ -209,8 +206,7 @@ class GPT(LLM_Base):
             completion = openai.ChatCompletion.create(
                 model=model,
                 messages=messages,
-                temperature=self.temperature,
-                max_tokens=32*1024
+                temperature=self.temperature
                 )
             LLM_Base.save_conversation_cache(model,messages,completion)
             if len(completion.choices)==0:
@@ -242,8 +238,7 @@ class GPT(LLM_Base):
                 model=model,
                 messages=messages,
                 functions=functions,
-                temperature=self.temperature,
-                max_tokens=32*1024
+                temperature=self.temperature
             )
             return response
         except Exception as e:
