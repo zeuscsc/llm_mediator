@@ -281,5 +281,5 @@ class GPT(LLM_Base):
             if self.is_incomplete_stream_cache(chat_cache) is False:
                 import shutil
                 shutil.rmtree(f"{LLM_STREAM_RESPONSE_CACHE_FOLDER}/{hashed_request}")
-                self.save_stream_response_cache(system,assistant,user,chat_caches,combined=True)
+                LLM_Base.save_stream_response_cache(model,system,assistant,user,chat_caches,combined=True)
     pass

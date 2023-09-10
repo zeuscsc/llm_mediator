@@ -210,26 +210,6 @@ class _LLM_Base(ABC):
                 shutil.rmtree(f"{LLM_STREAM_RESPONSE_CACHE_FOLDER}/{hashed_request}")
         return
     
-    def save_response_cache(self,system,assistant,user,chat_cache):
-        model_name=self.get_model_name()
-        _LLM_Base.save_response_cache(model_name,system,assistant,user,chat_cache)
-    def save_stream_response_cache(self,system,assistant,user,chat_cache,combined=False):
-        model_name=self.get_model_name()
-        _LLM_Base.save_stream_response_cache(model_name,system,assistant,user,chat_cache,combined=combined)
-    def save_conversation_stream_cache(self,messages,chat_cache):
-        model_name=self.get_model_name()
-        _LLM_Base.save_conversation_stream_cache(model_name,messages,chat_cache)
-    def save_conversation_cache(self,messages,chat_cache):
-        model_name=self.get_model_name()
-        _LLM_Base.save_conversation_cache(model_name,messages,chat_cache)
-    
-    def delete_response_cache(self,system,assistant,user):
-        model=self.get_model_name()
-        _LLM_Base.delete_cache(model,system,assistant,user,LLM_RESPONSE_CACHE_FOLDER)
-    def delete_stream_response_cache(self,system,assistant,user):
-        model=self.get_model_name()
-        _LLM_Base.delete_cache(model,system,assistant,user,LLM_STREAM_RESPONSE_CACHE_FOLDER)
-    
     def combine_stream_response_cache(self,system,assistant,user):
         model=self.get_model_name()
         hashed_request=calculate_md5(f"{model}{system}{assistant}{user}")
@@ -246,7 +226,7 @@ class _LLM_Base(ABC):
             if self.is_incomplete_stream_cache(chat_cache) is False:
                 import shutil
                 shutil.rmtree(f"{LLM_STREAM_RESPONSE_CACHE_FOLDER}/{hashed_request}")
-                self.save_stream_response_cache(system,assistant,user,chat_caches,combined=True)
+                _LLM_Base.save_stream_response_cache(model,system,assistant,user,chat_caches,combined=True)
 
     
     def have_conversation_stream_cache(self,model,messages:list):
