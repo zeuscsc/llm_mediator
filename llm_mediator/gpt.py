@@ -45,9 +45,10 @@ class GPT(LLM_Base):
             return chunk["choices"][0]["delta"]["content"]
         return None
     def append_text_into_generator_chunk(chunk,text):
-        if "choices" in chunk and len(chunk["choices"])>0 and "delta" in chunk["choices"][0] and \
-            "content" in chunk["choices"][0]["delta"]:
-            chunk["choices"][0]["delta"]["content"]+=text
+        if text is not None:
+            if "choices" in chunk and len(chunk["choices"])>0 and "delta" in chunk["choices"][0] and \
+                "content" in chunk["choices"][0]["delta"]:
+                chunk["choices"][0]["delta"]["content"]+=text
         return chunk
     
     def get_embeddings(self,sentences:str|list[str]):
