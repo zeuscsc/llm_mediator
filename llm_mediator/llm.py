@@ -330,6 +330,8 @@ I don't need any extra description in the JSON only give me the JSON.
     def get_response_stream(self,system,assistant,user):
         response=self.model_class.get_response_stream(system,assistant,user)
         return response
+    def combine_stream_response_cache(self,model,system,assistant,user):
+        return self.model_class.combine_stream_response_cache(model,system,assistant,user)
     def get_conversation_stream(self,messages):
         return self.model_class.get_conversation_stream(messages)
     def on_tokens_oversized(self,e,system,assistant,user):
