@@ -210,9 +210,9 @@ class _LLM_Base(ABC):
                 shutil.rmtree(f"{LLM_STREAM_RESPONSE_CACHE_FOLDER}/{hashed_request}")
         return
     def combine_stream_response_cache(self,model,system,assistant,user):
+        hashed_request=calculate_md5(f"{model}{system}{assistant}{user}")
         if os.path.exists(f"{LLM_STREAM_RESPONSE_CACHE_FOLDER}/{hashed_request}/combined.json"):
             return
-        hashed_request=calculate_md5(f"{model}{system}{assistant}{user}")
         if self.have_stream_response_cache(model,system,assistant,user):
             matching_files = glob.glob(f"{LLM_STREAM_RESPONSE_CACHE_FOLDER}/{hashed_request}/*.json")
             matching_files=sorted(matching_files, key=lambda x: int(os.path.basename(x).split(".")[0]))
