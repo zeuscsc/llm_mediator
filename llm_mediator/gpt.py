@@ -94,7 +94,7 @@ class GPT(LLM_Base):
                     "message" not in response_cache["choices"][0] or
                     "content" not in response_cache["choices"][0]["message"]):
                     LLM_Base.delete_response_cache(model,system,assistant,user)
-        print(f"Connecting to {model} model...")
+        # print(f"Connecting to {model} model...")
         try:
             completion = openai.ChatCompletion.create(
                 model=model,
@@ -206,7 +206,7 @@ class GPT(LLM_Base):
                 "content" in response_cache["choices"][0]["message"]:
                 response_content=response_cache["choices"][0]["message"]["content"]
                 return response_content
-        print(f"Connecting to {model} model...")
+        # print(f"Connecting to {model} model...")
         try:
             completion = openai.ChatCompletion.create(
                 model=model,

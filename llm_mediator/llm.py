@@ -49,7 +49,7 @@ class _LLM_Base(ABC):
     def load_response_cache(model,system,assistant,user):
         try:
             hashed_request=calculate_md5(f"{model}{system}{assistant}{user}")
-            print(f"Loading response cache for {model} model with id: {hashed_request}...")
+            # print(f"Loading response cache for {model} model with id: {hashed_request}...")
             matching_files = glob.glob(f"{LLM_RESPONSE_CACHE_FOLDER}/{hashed_request}/*.json")
             if len(matching_files)>0:
                 with open(matching_files[-1], "r",encoding="utf8") as chat_cache_file:
@@ -63,11 +63,11 @@ class _LLM_Base(ABC):
         messages=[{"role": "system","content": system},{"role": "user","content": user},{"role": "assistant","content": assistant}]
         _LLM_Base.save_request_log(model,hashed_request,messages,LLM_RESPONSE_CACHE_FOLDER)
         _LLM_Base.save_cache(model,hashed_request,chat_cache,LLM_RESPONSE_CACHE_FOLDER)
-    def save_stream_response_cache(model,system,assistant,user,chat_cache):
+    def save_stream_response_cache(model,system,assistant,user,chat_cache,combined=False):
         hashed_request=calculate_md5(f"{model}{system}{assistant}{user}")
         messages=[{"role": "system","content": system},{"role": "user","content": user},{"role": "assistant","content": assistant}]
         _LLM_Base.save_request_log(model,hashed_request,messages,LLM_STREAM_RESPONSE_CACHE_FOLDER)
-        _LLM_Base.save_cache(model,hashed_request,chat_cache,LLM_STREAM_RESPONSE_CACHE_FOLDER)
+        _LLM_Base.save_cache(model,hashed_request,chat_cache,LLM_STREAM_RESPONSE_CACHE_FOLDER,combined=combined)
     def save_conversation_stream_cache(model,messages,chat_cache):
         hashed_request=calculate_md5(f"{model}{json.dumps(messages)}")
         _LLM_Base.save_request_log(model,hashed_request,messages,LLM_CONVERSATION_STREAM_CACHE_FOLDER)
@@ -76,9 +76,11 @@ class _LLM_Base(ABC):
         hashed_request=calculate_md5(f"{model}{json.dumps(messages)}")
         _LLM_Base.save_request_log(model,hashed_request,messages,LLM_CONVERSATION_CACHE_FOLDER)
         _LLM_Base.save_cache(model,hashed_request,chat_cache,LLM_CONVERSATION_CACHE_FOLDER)
-    def save_cache(model,hashed_request,chat_cache,folder_path):
+    def save_cache(model,hashed_request,chat_cache,folder_path,combined=False):
         matching_files = glob.glob(f"{folder_path}/{hashed_request}/*.json")
         file_index=len(matching_files)
+        if combined:
+            file_index="combined"
         os.makedirs(f"{folder_path}/{hashed_request}", exist_ok=True)
         with open(f"{folder_path}/{hashed_request}/{file_index}.json", "w",encoding="utf8") as temp_file:
             json.dump(chat_cache, temp_file, ensure_ascii=False)
@@ -187,8 +189,14 @@ class _LLM_Base(ABC):
         return os.path.exists(f"{LLM_STREAM_RESPONSE_CACHE_FOLDER}/{hashed_request}")
     def load_stream_response_cache(self,model,system,assistant,user):
         hashed_request=calculate_md5(f"{model}{system}{assistant}{user}")
-        print(f"Loading response cache for {model} model with id: {hashed_request}...")
+        # print(f"Loading response cache for {model} model with id: {hashed_request}...")
         if self.have_stream_response_cache(model,system,assistant,user):
+            if os.path.exists(f"{LLM_STREAM_RESPONSE_CACHE_FOLDER}/{hashed_request}/combined.json"):
+                with open(f"{LLM_STREAM_RESPONSE_CACHE_FOLDER}/{hashed_request}/combined.json", "r",encoding="utf8") as chat_cache_file:
+                    chat_cache = json.load(chat_cache_file)
+                    for chunk in chat_cache:
+                        yield chunk
+                    return
             matching_files = glob.glob(f"{LLM_STREAM_RESPONSE_CACHE_FOLDER}/{hashed_request}/*.json")
             matching_files=sorted(matching_files, key=lambda x: int(os.path.basename(x).split(".")[0]))
             for path in matching_files:
@@ -200,13 +208,29 @@ class _LLM_Base(ABC):
                 yield chat_cache
                 import shutil
                 shutil.rmtree(f"{LLM_STREAM_RESPONSE_CACHE_FOLDER}/{hashed_request}")
+        return
+    def combine_stream_response_cache(self,model,system,assistant,user):
+        hashed_request=calculate_md5(f"{model}{system}{assistant}{user}")
+        if self.have_stream_response_cache(model,system,assistant,user):
+            matching_files = glob.glob(f"{LLM_STREAM_RESPONSE_CACHE_FOLDER}/{hashed_request}/*.json")
+            matching_files=sorted(matching_files, key=lambda x: int(os.path.basename(x).split(".")[0]))
+            chat_caches=[]
+            for path in matching_files:
+                with open(path, "r",encoding="utf8") as chat_cache_file:
+                    chat_cache = json.load(chat_cache_file)
+                    chat_caches.append(chat_cache)
+            if self.is_incomplete_stream_cache(chat_cache) is False:
+                import shutil
+                shutil.rmtree(f"{LLM_STREAM_RESPONSE_CACHE_FOLDER}/{hashed_request}")
+                self.save_stream_response_cache(model,system,assistant,user,chat_caches,combined=True)
+
     
     def have_conversation_stream_cache(self,model,messages:list):
         hashed_request=calculate_md5(f"{model}{json.dumps(messages)}")
         return os.path.exists(f"{LLM_STREAM_RESPONSE_CACHE_FOLDER}/{hashed_request}")
     def load_conversation_stream_cache(self,model,messages:list):
         hashed_request=calculate_md5(f"{model}{json.dumps(messages)}")
-        print(f"Loading response cache for {model} model with id: {hashed_request}...")
+        # print(f"Loading response cache for {model} model with id: {hashed_request}...")
         if self.have_conversation_stream_cache(model,messages):
             matching_files = glob.glob(f"{LLM_CONVERSATION_STREAM_CACHE_FOLDER}/{hashed_request}/*.json")
             matching_files=sorted(matching_files, key=lambda x: int(os.path.basename(x).split(".")[0]))
@@ -224,7 +248,7 @@ class _LLM_Base(ABC):
         return os.path.exists(f"{LLM_CONVERSATION_CACHE_FOLDER}/{hashed_request}.json")
     def load_conversation_cache(self,model,messages:list):
         hashed_request=calculate_md5(f"{model}{json.dumps(messages)}")
-        print(f"Loading response cache for {model} model with id: {hashed_request}...")
+        # print(f"Loading response cache for {model} model with id: {hashed_request}...")
         matching_files = glob.glob(f"{LLM_CONVERSATION_CACHE_FOLDER}/{hashed_request}/*.json")
         if len(matching_files)>0:
             with open(matching_files[-1], "r",encoding="utf8") as chat_cache_file:
