@@ -269,6 +269,8 @@ class LLM:
         pass
     def get_model_name(self):
         return self.model_class.get_model_name()
+    def set_model_name(self,name):
+        return self.model_class.set_model_name(name)
     def get_response(self,system,assistant,user):
         if self.on_each_response is None:
             return self.model_class.get_response(system,assistant,user)
