@@ -271,12 +271,12 @@ class LLM:
         return self.model_class.get_model_name()
     def set_model_name(self,name):
         return self.model_class.set_model_name(name)
-    def get_response(self,system,assistant,user):
+    def get_response(self,system,assistant,user)->str:
         if self.on_each_response is None:
             return self.model_class.get_response(system,assistant,user)
         else:
             return self.on_each_response(system,assistant,user,None,self.model_class.get_response(system,assistant,user))
-    def get_json_response(self,system,assistant,user):
+    def get_json_response(self,system,assistant,user)->dict:
         response=self.get_response(system,user,assistant)
         try:
             return json.loads(response)
@@ -284,7 +284,7 @@ class LLM:
             print(e)
             print(response)
             return self.repair_json(response)
-    def repair_json(self,json_data, schema=None,error=None):
+    def repair_json(self,json_data, schema=None,error=None)->dict:
         system="""Fix the following JSON string to make it valid.
 I don't need any extra description in the JSON only give me the JSON.
 """
