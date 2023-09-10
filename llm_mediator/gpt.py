@@ -43,6 +43,12 @@ class GPT(LLM_Base):
         if "choices" in chunk and len(chunk["choices"])>0 and "delta" in chunk["choices"][0] and \
             "content" in chunk["choices"][0]["delta"]:
             return chunk["choices"][0]["delta"]["content"]
+        return None
+    def append_text_into_generator_chunk(chunk,text):
+        if "choices" in chunk and len(chunk["choices"])>0 and "delta" in chunk["choices"][0] and \
+            "content" in chunk["choices"][0]["delta"]:
+            chunk["choices"][0]["delta"]["content"]+=text
+        return chunk
     
     def get_embeddings(self,sentences:str|list[str]):
         origin_sentences_type=type(sentences)
@@ -251,4 +257,29 @@ class GPT(LLM_Base):
             pass
         return
     
+    def combine_stream_response_cache(self,system,assistant,user):
+        from .llm import LLM_STREAM_RESPONSE_CACHE_FOLDER,calculate_md5
+        import glob
+        import json
+
+        model=self.get_model_name()
+        hashed_request=calculate_md5(f"{model}{system}{assistant}{user}")
+        if os.path.exists(f"{LLM_STREAM_RESPONSE_CACHE_FOLDER}/{hashed_request}/combined.json"):
+            return
+        if self.have_stream_response_cache(model,system,assistant,user):
+            matching_files = glob.glob(f"{LLM_STREAM_RESPONSE_CACHE_FOLDER}/{hashed_request}/*.json")
+            matching_files=sorted(matching_files, key=lambda x: int(os.path.basename(x).split(".")[0]))
+            first_chunk=None
+            for path in matching_files:
+                with open(path, "r",encoding="utf8") as chat_cache_file:
+                    chat_cache = json.load(chat_cache_file)
+                    text=GPT.extract_text_from_generator_chunk(chat_cache)
+                    if first_chunk is None and text is not None:
+                        first_chunk=chat_cache
+                    first_chunk=GPT.append_text_into_generator_chunk(first_chunk,text)
+            chat_caches=[first_chunk,chat_cache]
+            if self.is_incomplete_stream_cache(chat_cache) is False:
+                import shutil
+                shutil.rmtree(f"{LLM_STREAM_RESPONSE_CACHE_FOLDER}/{hashed_request}")
+                self.save_stream_response_cache(system,assistant,user,chat_caches,combined=True)
     pass

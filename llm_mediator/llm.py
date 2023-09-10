@@ -246,7 +246,7 @@ class _LLM_Base(ABC):
             if self.is_incomplete_stream_cache(chat_cache) is False:
                 import shutil
                 shutil.rmtree(f"{LLM_STREAM_RESPONSE_CACHE_FOLDER}/{hashed_request}")
-                self.save_stream_response_cache(model,system,assistant,user,chat_caches,combined=True)
+                self.save_stream_response_cache(system,assistant,user,chat_caches,combined=True)
 
     
     def have_conversation_stream_cache(self,model,messages:list):
