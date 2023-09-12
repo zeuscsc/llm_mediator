@@ -2,9 +2,9 @@ from typing import Callable, Iterator
 import time
 HEADLESS=True
 
-def build_and_execute_tasks(task:Callable,parameters:Iterator,threads_count:int=10,slience=True,waiting_time=0):
-    return build_and_execute(parameters,task,threads_count,slience,waiting_time)
-def build_and_execute(parameters:Iterator,task:Callable,threads_count:int=10,slience=True,waiting_time=0):
+def build_and_execute_tasks(tasks:list[Callable]|Callable,parameters:Iterator,threads_count:int=10,slience=True,waiting_time=0):
+    return build_and_execute(parameters,tasks,threads_count,slience,waiting_time)
+def build_and_execute(parameters:Iterator,tasks:list[Callable]|Callable,threads_count:int=10,slience=True,waiting_time=0):
     """Initialize multi-threads queue for parallel tasks
 
     Args:
@@ -22,7 +22,11 @@ def build_and_execute(parameters:Iterator,task:Callable,threads_count:int=10,sli
     """
     def run_task(*args, **kwargs):
         try:
-            task(*args, **kwargs)
+            if isinstance(tasks,list):
+                for task in tasks:
+                    task(*args, **kwargs)
+            else:
+                tasks(*args, **kwargs)
         except Exception as e:
             print(e)
     from queue import Queue
