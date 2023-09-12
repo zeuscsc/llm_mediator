@@ -52,9 +52,10 @@ class Embedding(LLM_Base):
         batch_dict.to(device)
         outputs = self.model(**batch_dict)
         embeddings = Embedding.average_pool(outputs.last_hidden_state, batch_dict['attention_mask'])
+        tensor_on_cpu = embeddings.cpu()
         if origin_sentences_type.__name__=="str":
-            return embeddings.detach().numpy()[0]
-        return embeddings.detach().numpy()
+            return tensor_on_cpu.detach().numpy()[0]
+        return tensor_on_cpu.detach().numpy()
     
     def get_response(self,system,assistant,user):
         return
