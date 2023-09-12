@@ -48,6 +48,8 @@ class Embedding(LLM_Base):
         if origin_sentences_type.__name__=="str":
             sentences=[sentences]
         batch_dict = self.tokenizer(sentences, max_length=512, padding=True, truncation=True, return_tensors='pt')
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu') 
+        batch_dict.to(device)
         outputs = self.model(**batch_dict)
         embeddings = Embedding.average_pool(outputs.last_hidden_state, batch_dict['attention_mask'])
         if origin_sentences_type.__name__=="str":
