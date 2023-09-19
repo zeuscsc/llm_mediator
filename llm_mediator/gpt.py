@@ -43,7 +43,7 @@ class GPT(LLM_Base):
         if "choices" in chunk and len(chunk["choices"])>0 and "delta" in chunk["choices"][0] and \
             "content" in chunk["choices"][0]["delta"]:
             return chunk["choices"][0]["delta"]["content"]
-        return None
+        return ""
     def append_text_into_generator_chunk(chunk,text):
         if text is not None:
             if "choices" in chunk and len(chunk["choices"])>0 and "delta" in chunk["choices"][0] and \

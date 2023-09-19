@@ -2,6 +2,44 @@ from typing import Callable, Iterator
 import time
 HEADLESS=True
 
+def execute_queue(iterator:Iterator,threads_count:int=10,slience=True,waiting_time=0):
+    def run_task(task:Callable,*args, **kwargs):
+        # try:
+            task(*args, **kwargs)
+        # except Exception as e:
+        #     print(e)
+    from queue import Queue
+    from threading import Thread
+    WORKERS_COUNT=threads_count
+    queue = Queue()
+    def worker():
+        while True:
+            row=queue.get()
+            task=None
+            if isinstance(row,tuple) or isinstance(row,list):
+                task=row[0]
+                parameter=row[1]
+            if isinstance(parameter,tuple) or isinstance(parameter,list):
+                args=parameter
+                kwargs={}
+            elif isinstance(parameter,dict):
+                args=[]
+                kwargs=parameter
+            if not slience:
+                print(f"Running {args}")
+            run_task(task,*args, **kwargs)
+            if not slience:
+                print(f"Task done.")
+            queue.task_done()
+    for i in range(WORKERS_COUNT):
+        Thread(target=worker, daemon=True).start()
+    def start():
+        for row in iterator:
+            queue.put(row)
+            time.sleep(waiting_time)
+        queue.join()
+    return start()
+
 def build_and_execute_tasks(tasks:list[Callable]|Callable,parameters:Iterator,threads_count:int=10,slience=True,waiting_time=0):
     """Initialize multi-threads queue for parallel tasks
     Args:
