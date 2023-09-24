@@ -273,7 +273,7 @@ class _LLM_Base(ABC):
             if isinstance(arg,list):
                 params.append(self.get_request_hash(*arg))
             if isinstance(arg,str) or isinstance(arg,int) or isinstance(arg,float):
-                params.append(arg)
+                params.append(str(arg))
             pass
         for key in kwargs:
             if isinstance(kwargs[key],dict):
