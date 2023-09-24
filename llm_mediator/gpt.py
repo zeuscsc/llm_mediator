@@ -99,7 +99,6 @@ class GPT(LLM_Base):
             last_chunk=None
             for chunk in json.loads(json.dumps(chunks)):
                 text=GPT.extract_text_from_generator_chunk(chunk,kwargs["generator_extracting_path"])
-                print(text,end="")
                 if first_chunk is None and text is not None:
                     first_chunk=chunk
                 first_chunk=GPT.append_text_into_generator_chunk(first_chunk,text,kwargs["generator_extracting_path"])
