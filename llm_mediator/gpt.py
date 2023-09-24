@@ -55,7 +55,7 @@ class GPT(LLM_Base):
                 parent_node=node
                 node = node[key]
             except KeyError:
-                return chunk
+                return ""
         if isinstance(node,str) and isinstance(text,str):
             parent_node[generator_extracting_path[-1]]+=text
         return chunk
