@@ -5,7 +5,7 @@ import hashlib
 import glob
 from abc import ABC, abstractmethod
 from typing import Any, Callable, Type,Generator
-from .folders import LLM_RESPONSE_CACHE_FOLDER,LLM_STREAM_RESPONSE_CACHE_FOLDER,LLM_CONVERSATION_STREAM_CACHE_FOLDER,LLM_CONVERSATION_CACHE_FOLDER
+from .folders import LLM_RESPONSE_CACHE_FOLDER,LLM_STREAM_RESPONSE_CACHE_FOLDER,LLM_CONVERSATION_STREAM_CACHE_FOLDER,LLM_CONVERSATION_CACHE_FOLDER,LLM_CHAT_COMPLETION_FOLDER
 from time import sleep
 import numpy as np
 
@@ -122,11 +122,15 @@ class _LLM_Base(ABC):
         results.extend(_LLM_Base.split_text_in_half_if_too_large(' '.join(words[half:])))
         return results
 
+    # region abstract methods
     @abstractmethod
     def get_model_name(self):
         pass
     @abstractmethod
     def set_model_name(self,name):
+        pass
+    @abstractmethod
+    def get_chat_completion(self,*args,**kwargs):
         pass
     @abstractmethod
     def detect_if_tokens_oversized(self,e):
@@ -149,6 +153,7 @@ class _LLM_Base(ABC):
     @abstractmethod
     def get_functions_response(self,messages:str|list[str],functions:list[dict]):
         pass
+    # endregion
     def set_event_listener(self,event_name:str,func:Callable[[Any], Any]):
         if event_name=="on_chunked":
             self.on_chunked=func
@@ -259,6 +264,41 @@ class _LLM_Base(ABC):
                 chat_cache = json.load(chat_cache_file)
                 return chat_cache
         return None
+    
+    def get_request_hash(self,*args,**kwargs):
+        params=[]
+        for arg in args:
+            if isinstance(arg,dict):
+                params.append(self.get_request_hash(**arg))
+            if isinstance(arg,list):
+                params.append(self.get_request_hash(*arg))
+            if isinstance(arg,str) or isinstance(arg,int) or isinstance(arg,float):
+                params.append(arg)
+            pass
+        for key in kwargs:
+            if isinstance(kwargs[key],dict):
+                params.append(self.get_request_hash(**kwargs[key]))
+            if isinstance(kwargs[key],list):
+                params.append(self.get_request_hash(*kwargs[key]))
+            if isinstance(kwargs[key],str) or isinstance(kwargs[key],int) or isinstance(kwargs[key],float):
+                params.append(kwargs[key])
+            pass
+        return calculate_md5("".join(params))
+    def have_chat_completion_cache(self,*args,**kwargs):
+        hashed_request=self.get_request_hash(*args,**kwargs)
+        return os.path.exists(f"{LLM_CHAT_COMPLETION_FOLDER}/{hashed_request}")
+    def load_chat_completion_cache(self,*args,**kwargs):
+        hashed_request=self.get_request_hash(*args,**kwargs)
+        if self.have_chat_completion_cache(*args,**kwargs):
+            matching_files = glob.glob(f"{LLM_CHAT_COMPLETION_FOLDER}/{hashed_request}/*.json")
+            matching_files=sorted(matching_files, key=lambda x: int(os.path.basename(x).split(".")[0]))
+            for path in matching_files:
+                with open(path, "r",encoding="utf8") as chat_caches_file:
+                    chat_caches = json.load(chat_caches_file)
+                    for chat_cache in chat_caches:
+                        yield chat_cache
+        else:
+            return None
     pass
 
 
@@ -348,4 +388,5 @@ I don't need any extra description in the JSON only give me the JSON.
         return self.model_class.get_embeddings(sentences)
     def get_functions_response(self,messages:str|list[str],functions:list[dict]):
         return self.model_class.get_functions_response(messages,functions)
+    
     pass

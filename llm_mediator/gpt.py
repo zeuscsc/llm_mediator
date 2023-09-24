@@ -1,5 +1,5 @@
 from typing import Any, Generator
-from .llm import LLM_Base,ON_TOKENS_OVERSIZED,CallStack
+from .llm import LLM_Base,ON_TOKENS_OVERSIZED,CallStack,calculate_md5
 import openai
 from time import sleep
 import time
@@ -75,6 +75,48 @@ class GPT(LLM_Base):
         return self.model_name
     def set_model_name(self, name):
         self.model_name = name
+    def get_chat_completion_from_openai(self,*args,**kwargs):
+        model=self.get_model_name()
+        response = openai.ChatCompletion.create(*args,model=model,stream=True,**kwargs)
+        first_chunk=None
+        last_chunk=None
+        for chunk in response:
+            yield chunk
+            text=GPT.extract_text_from_generator_chunk(chunk)
+            if first_chunk is None and text is not None:
+                first_chunk=chunk
+            first_chunk=GPT.append_text_into_generator_chunk(first_chunk,text)
+            last_chunk=chunk
+            pass
+        if first_chunk is not None and last_chunk is not None:
+            chunks=[first_chunk,last_chunk]
+            hashed_request=self.get_request_hash(*args,**kwargs)
+            LLM_Base.save_cache(model,hashed_request,chunks)
+    def get_chat_completion_from_cache(self,*args,**kwargs):
+        model=self.get_model_name()
+        hashed_request=self.get_request_hash(*args,**kwargs)
+        if self.have_chat_completion_cache(model,hashed_request):
+            cache=self.load_chat_completion_cache(model,hashed_request)
+            return cache
+        else:
+            return None
+    def get_chat_completion(self,*args,stream,**kwargs):
+        model=self.get_model_name()
+        if model is None:
+            raise Exception("No API key found for OpenAI or Tecky")
+        generator=None
+        if self.have_chat_completion_cache(model,*args,**kwargs) and self.use_cache:
+            generator = self.get_chat_completion_from_cache(*args,**kwargs)
+        else:
+            generator = self.get_chat_completion_from_openai(*args,**kwargs)
+        if stream is True:
+            return generator
+        else:
+            text=""
+            for chunk in generator:
+                text+=GPT.extract_text_from_generator_chunk(chunk)
+                pass
+            return text
     def detect_if_tokens_oversized(self,e):
         return (re.search(r"This model's maximum context length is", str(e)) is not None and \
             re.search(r"tokens", str(e)) is not None and \
