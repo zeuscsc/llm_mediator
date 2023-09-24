@@ -339,6 +339,8 @@ class LLM:
         return self.model_class.get_model_name()
     def set_model_name(self,name):
         return self.model_class.set_model_name(name)
+    def get_chat_completion(self,*args,**kwargs):
+        return self.model_class.get_chat_completion(*args,**kwargs)
     def get_response(self,system,assistant,user)->str:
         if self.on_each_response is None:
             return self.model_class.get_response(system,assistant,user)
