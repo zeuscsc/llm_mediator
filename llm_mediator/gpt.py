@@ -100,7 +100,7 @@ class GPT(LLM_Base):
             return cache
         else:
             return None
-    def get_chat_completion(self,*args,stream,**kwargs):
+    def get_chat_completion(self,*args,stream=False,**kwargs):
         model=self.get_model_name()
         if model is None:
             raise Exception("No API key found for OpenAI or Tecky")
