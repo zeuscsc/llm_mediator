@@ -91,7 +91,7 @@ class GPT(LLM_Base):
         if first_chunk is not None and last_chunk is not None:
             chunks=[first_chunk,last_chunk]
             hashed_request=self.get_request_hash(*args,**kwargs)
-            LLM_Base.save_cache(model,hashed_request,chunks)
+            self.save_chat_completion_cache(model,hashed_request,chunks)
     def get_chat_completion_from_cache(self,*args,**kwargs):
         model=self.get_model_name()
         hashed_request=self.get_request_hash(*args,**kwargs)

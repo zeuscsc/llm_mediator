@@ -281,12 +281,14 @@ class _LLM_Base(ABC):
             if isinstance(kwargs[key],list):
                 params.append(self.get_request_hash(*kwargs[key]))
             if isinstance(kwargs[key],str) or isinstance(kwargs[key],int) or isinstance(kwargs[key],float):
-                params.append(kwargs[key])
+                params.append(str(kwargs[key]))
             pass
         return calculate_md5("".join(params))
     def have_chat_completion_cache(self,*args,**kwargs):
         hashed_request=self.get_request_hash(*args,**kwargs)
         return os.path.exists(f"{LLM_CHAT_COMPLETION_FOLDER}/{hashed_request}")
+    def save_chat_completion_cache(self,*args,**kwargs):
+        LLM_Base.save_cache(*args,**kwargs,folder_path=LLM_CHAT_COMPLETION_FOLDER)
     def load_chat_completion_cache(self,*args,**kwargs):
         hashed_request=self.get_request_hash(*args,**kwargs)
         if self.have_chat_completion_cache(*args,**kwargs):
