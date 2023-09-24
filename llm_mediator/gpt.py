@@ -46,7 +46,7 @@ class GPT(LLM_Base):
             try:
                 node = node[key]
             except KeyError:
-                return chunk
+                return ""
         return node
     def append_text_into_generator_chunk(chunk,text,generator_extracting_path=["choices",0,"message","content"]):
         node=chunk
@@ -55,7 +55,7 @@ class GPT(LLM_Base):
                 parent_node=node
                 node = node[key]
             except KeyError:
-                return ""
+                return chunk
         if isinstance(node,str) and isinstance(text,str):
             parent_node[generator_extracting_path[-1]]+=text
         return chunk
@@ -107,13 +107,14 @@ class GPT(LLM_Base):
             if first_chunk is not None and last_chunk is not None:
                 chunks=[first_chunk,last_chunk]
             pass
-        hashed_request=self.get_request_hash(*args,**kwargs)
+        hashed_request=self.get_request_hash(model,*args,**kwargs)
         self.save_chat_completion_cache(model,hashed_request,chunks)
-    def get_chat_completion_from_cache(self,*args,**kwargs):
+    def get_chat_completion_from_cache(self,hashed_request=None,*args,**kwargs):
         model=self.get_model_name()
-        hashed_request=self.get_request_hash(*args,**kwargs)
-        if self.have_chat_completion_cache(model,hashed_request):
-            cache=self.load_chat_completion_cache(model,hashed_request)
+        if hashed_request is None:
+            hashed_request=self.get_request_hash(model,*args,**kwargs)
+        if self.have_chat_completion_cache(hashed_request):
+            cache=self.load_chat_completion_cache(hashed_request)
             return cache
         else:
             return None
@@ -122,10 +123,11 @@ class GPT(LLM_Base):
         if model is None:
             raise Exception("No API key found for OpenAI or Tecky")
         generator=None
-        if self.have_chat_completion_cache(model,*args,**kwargs) and self.use_cache:
-            generator = self.get_chat_completion_from_cache(*args,**kwargs)
-        else:
-            generator = self.get_chat_completion_from_openai(*args,**kwargs)
+        hashed_request=self.get_request_hash(model,*args,**kwargs)
+        if self.have_chat_completion_cache(hashed_request,*args,**kwargs) and self.use_cache:
+            generator = self.get_chat_completion_from_cache(hashed_request,*args,**kwargs)
+        # else:
+        #     generator = self.get_chat_completion_from_openai(*args,**kwargs)
         if stream is True:
             return generator
         else:

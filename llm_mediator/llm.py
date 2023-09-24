@@ -284,14 +284,17 @@ class _LLM_Base(ABC):
                 params.append(str(kwargs[key]))
             pass
         return calculate_md5("".join(params))
-    def have_chat_completion_cache(self,*args,**kwargs):
-        hashed_request=self.get_request_hash(*args,**kwargs)
+    def have_chat_completion_cache(self,hashed_request=None,*args,**kwargs):
+        if hashed_request is None:
+            hashed_request=self.get_request_hash(*args,**kwargs)
         return os.path.exists(f"{LLM_CHAT_COMPLETION_FOLDER}/{hashed_request}")
     def save_chat_completion_cache(self,*args,**kwargs):
         LLM_Base.save_cache(*args,**kwargs,folder_path=LLM_CHAT_COMPLETION_FOLDER)
-    def load_chat_completion_cache(self,*args,**kwargs):
-        hashed_request=self.get_request_hash(*args,**kwargs)
-        if self.have_chat_completion_cache(*args,**kwargs):
+    def load_chat_completion_cache(self,hashed_request=None,*args,**kwargs):
+        if hashed_request is None:
+            model=self.get_model_name()
+            hashed_request=self.get_request_hash(model,*args,**kwargs)
+        if self.have_chat_completion_cache(hashed_request,*args,**kwargs):
             matching_files = glob.glob(f"{LLM_CHAT_COMPLETION_FOLDER}/{hashed_request}/*.json")
             matching_files=sorted(matching_files, key=lambda x: int(os.path.basename(x).split(".")[0]))
             for path in matching_files:
