@@ -84,8 +84,10 @@ class GPT(LLM_Base):
         self.model_name = name
     def get_chat_completion_from_openai(self,*args,**kwargs):
         model=self.get_model_name()
-        response = openai.ChatCompletion.create(*args,model=model,stream=True,**kwargs)
-        if "generator_extracting_path" in kwargs:
+        openai_kwargs=kwargs.copy()
+        openai_kwargs.pop("generator_extracting_path",None)
+        response = openai.ChatCompletion.create(*args,model=model,stream=True,**openai_kwargs)
+        if "generator_extracting_path" in kwargs and generator_extracting_path is not None:
             generator_extracting_path=kwargs["generator_extracting_path"]
             first_chunk=None
             last_chunk=None
