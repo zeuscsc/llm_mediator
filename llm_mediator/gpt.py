@@ -39,17 +39,24 @@ class GPT(LLM_Base):
             return GPT3_MODEL
         else:
             return None
-    def extract_text_from_generator_chunk(chunk):
-        if "choices" in chunk and len(chunk["choices"])>0 and "delta" in chunk["choices"][0] and \
-            "content" in chunk["choices"][0]["delta"]:
-            return chunk["choices"][0]["delta"]["content"]
-        return ""
-    def append_text_into_generator_chunk(chunk,text):
-        if text is not None:
-            if "choices" in chunk and len(chunk["choices"])>0 and "delta" in chunk["choices"][0] and \
-                "content" in chunk["choices"][0]["delta"]:
-                chunk["choices"][0]["delta"]["content"]+=text
+    def extract_text_from_generator_chunk(chunk,generator_extracting_path=["choices",0,"message","content"]):
+        for path in generator_extracting_path:
+            if path in chunk:
+                chunk=chunk[path]
+            else:
+                return ""
         return chunk
+    def append_text_into_generator_chunk(chunk,text,generator_extracting_path=["choices",0,"message","content"]):
+        original_chunk=chunk
+        last_chunk=None
+        for path in generator_extracting_path:
+            if path in chunk:
+                last_chunk=chunk
+                chunk=chunk[path]
+            else:
+                return chunk
+        last_chunk[path]+=text
+        return original_chunk
     
     def get_embeddings(self,sentences:str|list[str]):
         origin_sentences_type=type(sentences)
@@ -78,20 +85,28 @@ class GPT(LLM_Base):
     def get_chat_completion_from_openai(self,*args,**kwargs):
         model=self.get_model_name()
         response = openai.ChatCompletion.create(*args,model=model,stream=True,**kwargs)
-        first_chunk=None
-        last_chunk=None
-        for chunk in response:
-            yield chunk
-            text=GPT.extract_text_from_generator_chunk(chunk)
-            if first_chunk is None and text is not None:
-                first_chunk=chunk
-            first_chunk=GPT.append_text_into_generator_chunk(first_chunk,text)
-            last_chunk=chunk
-            pass
-        if first_chunk is not None and last_chunk is not None:
-            chunks=[first_chunk,last_chunk]
-            hashed_request=self.get_request_hash(*args,**kwargs)
-            self.save_chat_completion_cache(model,hashed_request,chunks)
+        if "generator_extracting_path" in kwargs:
+            generator_extracting_path=kwargs["generator_extracting_path"]
+            first_chunk=None
+            last_chunk=None
+            for chunk in response:
+                yield chunk
+                text=GPT.extract_text_from_generator_chunk(chunk,generator_extracting_path)
+                if first_chunk is None and text is not None:
+                    first_chunk=chunk
+                first_chunk=GPT.append_text_into_generator_chunk(first_chunk,text,generator_extracting_path)
+                last_chunk=chunk
+                pass
+            if first_chunk is not None and last_chunk is not None:
+                chunks=[first_chunk,last_chunk]
+        else:
+            chunks=[]
+            for chunk in response:
+                yield chunk
+                chunks.append(chunk)
+                pass
+        hashed_request=self.get_request_hash(*args,**kwargs)
+        self.save_chat_completion_cache(model,hashed_request,chunks)
     def get_chat_completion_from_cache(self,*args,**kwargs):
         model=self.get_model_name()
         hashed_request=self.get_request_hash(*args,**kwargs)
