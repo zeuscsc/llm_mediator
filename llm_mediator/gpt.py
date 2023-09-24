@@ -87,7 +87,7 @@ class GPT(LLM_Base):
         openai_kwargs=kwargs.copy()
         openai_kwargs.pop("generator_extracting_path",None)
         response = openai.ChatCompletion.create(*args,model=model,stream=True,**openai_kwargs)
-        if "generator_extracting_path" in kwargs and generator_extracting_path is not None:
+        if "generator_extracting_path" in kwargs and kwargs["generator_extracting_path"] is not None:
             generator_extracting_path=kwargs["generator_extracting_path"]
             first_chunk=None
             last_chunk=None
