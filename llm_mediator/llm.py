@@ -129,28 +129,28 @@ class _LLM_Base(ABC):
     @abstractmethod
     def set_model_name(self,name):
         pass
-    @abstractmethod
+    
     def get_chat_completion(self,*args,**kwargs):
         pass
-    @abstractmethod
+    
     def detect_if_tokens_oversized(self,e):
         pass
-    @abstractmethod
+    
     def get_response(self,system,assistant,user)->str:
         pass
-    @abstractmethod
+    
     def get_response_stream(self,system,assistant,user)->Generator[Any,Any,None]:
         pass
-    @abstractmethod
+    
     def get_conversation_stream(self,messages)->Generator[Any,Any,None]:
         pass
-    @abstractmethod
+    
     def get_conversation_response(self,messages)->str:
         pass
-    @abstractmethod
+    
     def get_embeddings(self,sentences:str|list[str])->np.ndarray:
         pass
-    @abstractmethod
+    
     def get_functions_response(self,messages:str|list[str],functions:list[dict]):
         pass
     # endregion
