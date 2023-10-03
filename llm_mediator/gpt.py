@@ -126,8 +126,8 @@ class GPT(LLM_Base):
         hashed_request=self.get_request_hash(model,*args,**kwargs)
         if self.have_chat_completion_cache(hashed_request,*args,**kwargs) and self.use_cache:
             generator = self.get_chat_completion_from_cache(hashed_request,*args,**kwargs)
-        # else:
-        #     generator = self.get_chat_completion_from_openai(*args,**kwargs)
+        else:
+            generator = self.get_chat_completion_from_openai(*args,**kwargs)
         if stream is True:
             return generator
         else:
