@@ -88,11 +88,14 @@ class GPT(LLM_Base):
         model=self.get_model_name()
         openai_kwargs=kwargs.copy()
         openai_kwargs.pop("generator_extracting_path",None)
+        openai_kwargs.pop("print_chunk",None)
         response = openai.ChatCompletion.create(*args,model=model,stream=True,**openai_kwargs)
         chunks=[]
         for chunk in response:
             yield chunk
             chunks.append(chunk)
+            if "print_chunk" in kwargs and kwargs["print_chunk"] is True:
+                print(chunk,end="")
             pass
         if "generator_extracting_path" in kwargs and kwargs["generator_extracting_path"] is not None:
             first_chunk=None
