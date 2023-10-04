@@ -40,15 +40,16 @@ class GPT(LLM_Base):
             return GPT3_MODEL
         else:
             return None
-    def extract_text_from_generator_chunk(chunk,generator_extracting_path=["choices",0,"message","content"]):
+    def extract_text_from_generator_chunk(chunk,generator_extracting_path):
         node=chunk
         for key in generator_extracting_path:
             try:
                 node = node[key]
             except KeyError:
+                print(f"Key {key} not found in {node}")
                 return ""
         return node
-    def append_text_into_generator_chunk(chunk,text,generator_extracting_path=["choices",0,"message","content"]):
+    def append_text_into_generator_chunk(chunk,text,generator_extracting_path):
         node=chunk
         for key in generator_extracting_path:
             try:
@@ -121,7 +122,7 @@ class GPT(LLM_Base):
             return cache
         else:
             return None
-    def get_chat_completion(self,stream=False,generator_extracting_path=["choices",0,"message","content"],*args,**kwargs):
+    def get_chat_completion(self,stream=False,generator_extracting_path=["choices",0,"delta","content"],*args,**kwargs):
         kwargs["generator_extracting_path"]=generator_extracting_path
         model=self.get_model_name()
         if model is None:
