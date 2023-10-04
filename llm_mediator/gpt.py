@@ -95,7 +95,7 @@ class GPT(LLM_Base):
             yield chunk
             chunks.append(chunk)
             if "print_chunk" in kwargs and kwargs["print_chunk"] is True:
-                print(chunk,end="")
+                print(GPT.extract_text_from_generator_chunk(chunk,kwargs["generator_extracting_path"]),end="")
             pass
         if "generator_extracting_path" in kwargs and kwargs["generator_extracting_path"] is not None:
             first_chunk=None
@@ -121,7 +121,8 @@ class GPT(LLM_Base):
             return cache
         else:
             return None
-    def get_chat_completion(self,*args,stream=False,**kwargs):
+    def get_chat_completion(self,stream=False,generator_extracting_path=["choices",0,"message","content"],*args,**kwargs):
+        kwargs["generator_extracting_path"]=generator_extracting_path
         model=self.get_model_name()
         if model is None:
             raise Exception("No API key found for OpenAI or Tecky")
