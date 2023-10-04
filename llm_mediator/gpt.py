@@ -15,6 +15,8 @@ OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
 TECKY_API_KEY = os.environ.get('TECKY_API_KEY')
 EMBEDDING_MODEL="text-embedding-ada-002"
 EMBEDDING_SIZE=1536
+DEFAULT_SIMPLE_TEXT_GENERATOR_EXTRACTING_PATH=["choices",0,"delta","content"]
+DEFAULT_FUNCTIONAL_JSON_TEXT_GENERATOR_EXTRACTING_PATH=["choices",0,"delta","function_call","arguments"]
 
 ON_RESULT_FILTERED="on_result_filtered"
 
@@ -22,11 +24,11 @@ def detect_if_result_filtered(e):
     return re.search(r"The response was filtered due to the prompt triggering Azure OpenAI’s content management policy.", str(e)) is not None
 
 class GPT(LLM_Base):
+    SIMPLE_TEXT_GENERATOR_EXTRACTING_PATH=DEFAULT_SIMPLE_TEXT_GENERATOR_EXTRACTING_PATH
+    FUNCTIONAL_JSON_TEXT_GENERATOR_EXTRACTING_PATH=DEFAULT_FUNCTIONAL_JSON_TEXT_GENERATOR_EXTRACTING_PATH
     embedding_size=EMBEDDING_SIZE
     gpt_error_delay=2
     temperature=0
-    simple_text_generator_extracting_path=["choices",0,"delta","content"]
-    functional_json_text_generator_extracting_path=["choices",0,"delta","function_call","arguments"]
 
     def switch2tecky():
         openai.api_key = TECKY_API_KEY
@@ -124,7 +126,7 @@ class GPT(LLM_Base):
             return cache
         else:
             return None
-    def get_chat_completion(self,stream=False,generator_extracting_path=["choices",0,"delta","content"],*args,**kwargs):
+    def get_chat_completion(self,stream=False,generator_extracting_path=DEFAULT_SIMPLE_TEXT_GENERATOR_EXTRACTING_PATH,*args,**kwargs):
         kwargs["generator_extracting_path"]=generator_extracting_path
         model=self.get_model_name()
         if model is None:
