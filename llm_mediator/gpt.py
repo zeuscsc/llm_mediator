@@ -50,7 +50,6 @@ class GPT(LLM_Base):
             try:
                 node = node[key]
             except KeyError:
-                print(f"Key {key} not found in {node}")
                 return ""
         return node
     def append_text_into_generator_chunk(chunk,text,generator_extracting_path):
