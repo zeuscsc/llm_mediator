@@ -25,6 +25,8 @@ class GPT(LLM_Base):
     embedding_size=EMBEDDING_SIZE
     gpt_error_delay=2
     temperature=0
+    simple_text_generator_extracting_path=["choices",0,"delta","content"]
+    functional_json_text_generator_extracting_path=["choices",0,"delta","function_call","arguments"]
 
     def switch2tecky():
         openai.api_key = TECKY_API_KEY
