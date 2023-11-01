@@ -1,17 +1,20 @@
-# LLM Picker
+# LLM Mediator
 Just a simple mediator for different LLM models
+Will cache the response for the same input text during debug and save money for you.
 
 ## Features
 - [x] Cache
 - [x] GPT-3.5
+- [x] GPT-3.5-16k
 - [x] GPT-4
 - [x] GPT-4-32k
-- [ ] LLaMA
+- [ ] LLaMA2
 - [ ] Falcon
 
 ## Quick Usage
 Install:
 ~~~shell
+pip install llm_mediator
 # Install llm_mediator from github
 pip install git+https://github.com/zeuscsc/llm_mediator.git
 ~~~
