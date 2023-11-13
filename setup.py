@@ -5,7 +5,7 @@ from shutil import rmtree
 
 from setuptools import find_packages, setup, Command
 
-NAME = 'LLM Mediator'
+NAME = 'LLM_Mediator'
 DESCRIPTION = 'Just a simple mediator for different LLM models.'
 URL = 'https://github.com/zeuscsc/llm_mediator.git'
 EMAIL = 'zeuscsc@gmail.com'
