@@ -110,10 +110,13 @@ class GPT(LLM_Base):
             if isinstance(chunk,dict):
                 if "choices" in chunk and len(chunk["choices"])>0:
                     choice=chunk["choices"][0]
-                    if "delta" in choice and "content" in choice["delta"]:
+                    if "delta" in choice and "content" in choice["delta"] and choice["delta"]["content"] is not None:
                         return text_path
-                    elif "delta" in choice and "function_call" in choice["delta"] and "arguments" in choice["delta"]["function_call"]:
-                        return functional_path
+                    elif "delta" in choice and "function_call" in choice["delta"]:
+                        function_call=choice["delta"]["function_call"]
+                        if function_call is not None:
+                            if "arguments" in choice["delta"]["function_call"]:
+                                return functional_path
             if isinstance(chunk,ChatCompletionChunk):
                 if hasattr(chunk,"choices") and len(chunk.choices)>0:
                     choice:Choice=chunk.choices[0]
@@ -206,7 +209,7 @@ class GPT(LLM_Base):
         else:
             text=""
             for chunk in generator:
-                text+=GPT.extract_text_from_generator_chunk(chunk)
+                text+=GPT.extract_text_from_chat_completion_chunk(chunk)
                 pass
             return text
     def detect_if_tokens_oversized(self,e):
