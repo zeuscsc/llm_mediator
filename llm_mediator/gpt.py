@@ -1,6 +1,7 @@
 from typing import Any, Generator
 from .llm import LLM_Base,ON_TOKENS_OVERSIZED,CallStack,calculate_md5
 import openai
+from openai.types.chat.chat_completion_chunk import ChatCompletionChunk,Choice
 from time import sleep
 import time
 import os
@@ -8,6 +9,7 @@ import re
 from .parallel_tasks_queuer import build_and_execute_tasks
 import numpy as np
 import json
+from abc import ABC, abstractmethod
 
 GPT3_MODEL = "gpt-3.5-turbo"
 GPT4_MODEL = "gpt-4"
@@ -22,7 +24,6 @@ ON_RESULT_FILTERED="on_result_filtered"
 
 def detect_if_result_filtered(e):
     return re.search(r"The response was filtered due to the prompt triggering Azure OpenAI’s content management policy.", str(e)) is not None
-
 class GPT(LLM_Base):
     SIMPLE_TEXT_GENERATOR_EXTRACTING_PATH=DEFAULT_SIMPLE_TEXT_GENERATOR_EXTRACTING_PATH
     FUNCTIONAL_JSON_TEXT_GENERATOR_EXTRACTING_PATH=DEFAULT_FUNCTIONAL_JSON_TEXT_GENERATOR_EXTRACTING_PATH
@@ -32,10 +33,10 @@ class GPT(LLM_Base):
 
     def switch2tecky():
         openai.api_key = TECKY_API_KEY
-        openai.api_base = "https://api.gpt.tecky.ai/v1"
+        openai.api_url = "https://api.gpt.tecky.ai/v1"
     def switch2openai():
         openai.api_key = OPENAI_API_KEY
-        openai.api_base = "https://api.openai.com/v1"
+        openai.api_url = "https://api.openai.com/v1"
 
     def model_picker():
         if TECKY_API_KEY is not None and TECKY_API_KEY != "":
@@ -44,6 +45,58 @@ class GPT(LLM_Base):
             return GPT3_MODEL
         else:
             return None
+    class BaseGeneratorExtractor(ABC):
+        @abstractmethod
+        def get_extraction_path(self,chunk):
+            pass
+        def extract_text_from_generator_chunk(self,chunk:ChatCompletionChunk):
+            node=chunk.choices[0]
+            extraction_path=self.get_extraction_path(chunk)
+            if extraction_path is None:
+                return ""
+            for key in extraction_path:
+                if hasattr(node,key) and getattr(node,key) is not None:
+                    node = getattr(node,key)
+                else:
+                    return ""
+            return node
+        def append_text_into_generator_chunk(self,chunk:ChatCompletionChunk,text):
+            node=chunk.choices[0]
+            extraction_path=self.get_extraction_path(chunk)
+            if extraction_path is None:
+                return chunk
+            for key in extraction_path:
+                if hasattr(node,key) and getattr(node,key) is not None:
+                    parent_node=node
+                    node = getattr(node,key)
+            if isinstance(node,str) and isinstance(text,str):
+                original_text=getattr(parent_node,extraction_path[-1])
+                current_key=extraction_path[-1]
+                targeted_text=original_text+text
+                setattr(parent_node,extraction_path[-1],getattr(parent_node,extraction_path[-1])+text)
+            return chunk
+        pass
+    class AutoGeneratorExtractor(BaseGeneratorExtractor):
+        @staticmethod
+        def get_extraction_path(chunk:ChatCompletionChunk):
+            if hasattr(chunk,"choices") and len(chunk.choices)>0:
+                choice:Choice=chunk.choices[0]
+                if hasattr(choice,"delta") \
+                    and hasattr(choice.delta,"content") and choice.delta.content is not None:
+                    return ["delta","content"]
+                elif hasattr(choice,"delta") \
+                    and hasattr(choice.delta,"function_call") and hasattr(choice.delta.function_call,"arguments")\
+                        and choice.delta.function_call.arguments is not None:
+                    return ["delta","function_call","arguments"]
+            return None
+        pass
+    
+    def extract_text_from_chat_completion_chunk(chunk,completion_extractor:BaseGeneratorExtractor=AutoGeneratorExtractor,**_):
+        return completion_extractor().extract_text_from_generator_chunk(chunk)
+    def append_text_into_chat_completion_chunk(chunk,text,completion_extractor:BaseGeneratorExtractor=AutoGeneratorExtractor,**_):
+        return completion_extractor().append_text_into_generator_chunk(chunk,text)
+
+
     def extract_text_from_generator_chunk(chunk,generator_extracting_path):
         node=chunk
         for key in generator_extracting_path:
@@ -67,12 +120,12 @@ class GPT(LLM_Base):
     def get_embeddings(self,sentences:str|list[str]):
         origin_sentences_type=type(sentences)
         if origin_sentences_type.__name__=="str":
-            return openai.Embedding.create(input = [sentences], model=EMBEDDING_MODEL)['data'][0]['embedding']
+            return openai.embeddings.create(input = [sentences], model=EMBEDDING_MODEL)['data'][0]['embedding']
         embeddings=[]
         def split_list(input_list, n):
             return [input_list[i:i + n] for i in range(0, len(input_list), n) if all(item is not None for item in input_list[i:i + n])]
         def get_embeddings_parallel(sentences):
-            for embedding in openai.Embedding.create(input = sentences, model=EMBEDDING_MODEL)['data']:
+            for embedding in openai.embeddings.create(input = sentences, model=EMBEDDING_MODEL)['data']:
                 embeddings.append(embedding['embedding'])
         sentences_chunks=split_list(sentences,16)
         params=[]
@@ -91,31 +144,31 @@ class GPT(LLM_Base):
     def get_chat_completion_from_openai(self,*args,**kwargs):
         model=self.get_model_name()
         openai_kwargs=kwargs.copy()
-        openai_kwargs.pop("generator_extracting_path",None)
         openai_kwargs.pop("print_chunk",None)
-        response = openai.ChatCompletion.create(*args,model=model,stream=True,**openai_kwargs)
-        chunks=[]
+        openai_kwargs.pop("completion_extractor",None)
+        response:ChatCompletionChunk = openai.chat.completions.create(*args,model=model,stream=True,**openai_kwargs)
+        chunks:list[ChatCompletionChunk]=[]
         for chunk in response:
             yield chunk
             chunks.append(chunk)
             if "print_chunk" in kwargs and kwargs["print_chunk"] is True:
-                print(GPT.extract_text_from_generator_chunk(chunk,kwargs["generator_extracting_path"]),end="")
-            pass
-        if "generator_extracting_path" in kwargs and kwargs["generator_extracting_path"] is not None:
-            first_chunk=None
-            last_chunk=None
-            for chunk in json.loads(json.dumps(chunks)):
-                text=GPT.extract_text_from_generator_chunk(chunk,kwargs["generator_extracting_path"])
-                if first_chunk is None and text is not None:
-                    first_chunk=chunk
-                first_chunk=GPT.append_text_into_generator_chunk(first_chunk,text,kwargs["generator_extracting_path"])
-                last_chunk=chunk
+                print(GPT.extract_text_from_chat_completion_chunk(chunk,**kwargs),end="")
                 pass
-            if first_chunk is not None and last_chunk is not None:
-                chunks=[first_chunk,last_chunk]
             pass
+        first_chunk=None
+        last_chunk=None
+        for chunk in chunks:
+            text=GPT.extract_text_from_chat_completion_chunk(chunk,**kwargs)
+            if first_chunk is None and text is not None:
+                first_chunk=chunk
+            first_chunk=GPT.append_text_into_chat_completion_chunk(first_chunk,text,**kwargs)
+            last_chunk=chunk
+            pass
+        if first_chunk is not None and last_chunk is not None:
+            chunks=[first_chunk,last_chunk]
         hashed_request=self.get_request_hash(model,*args,**kwargs)
-        self.save_chat_completion_cache(model,hashed_request,chunks)
+        output_chunks=[json.loads(chunk.model_dump_json()) for chunk in chunks]
+        self.save_chat_completion_cache(model,hashed_request,output_chunks)
     def get_chat_completion_from_cache(self,hashed_request=None,*args,**kwargs):
         model=self.get_model_name()
         if hashed_request is None:
@@ -125,8 +178,8 @@ class GPT(LLM_Base):
             return cache
         else:
             return None
-    def get_chat_completion(self,stream=False,generator_extracting_path=DEFAULT_SIMPLE_TEXT_GENERATOR_EXTRACTING_PATH,*args,**kwargs):
-        kwargs["generator_extracting_path"]=generator_extracting_path
+    def get_chat_completion(self,stream=False,completion_extractor=AutoGeneratorExtractor,*args,**kwargs):
+        kwargs["completion_extractor"]=completion_extractor
         model=self.get_model_name()
         if model is None:
             raise Exception("No API key found for OpenAI or Tecky")
@@ -172,7 +225,7 @@ class GPT(LLM_Base):
                     LLM_Base.delete_response_cache(model,system,assistant,user)
         # print(f"Connecting to {model} model...")
         try:
-            completion = openai.ChatCompletion.create(
+            completion = openai.chat.completions.create(
                 model=model,
                 messages=[
                         {"role": "system","content": system},
@@ -207,7 +260,7 @@ class GPT(LLM_Base):
     def get_response_stream_from_openai(self, system, assistant, user):
         model=self.get_model_name()
         try:
-            response = openai.ChatCompletion.create(
+            response = openai.chat.completions.create(
                 model=model,
                 messages=[
                         {"role": "system","content": system},
@@ -244,7 +297,7 @@ class GPT(LLM_Base):
     def get_conversation_stream_from_openai(self, messages):
         model=self.get_model_name()
         try:
-            response = openai.ChatCompletion.create(
+            response = openai.chat.completions.create(
                 model=model,
                 messages=messages,
                 temperature=self.temperature,
@@ -284,7 +337,7 @@ class GPT(LLM_Base):
                 return response_content
         # print(f"Connecting to {model} model...")
         try:
-            completion = openai.ChatCompletion.create(
+            completion = openai.chat.completions.create(
                 model=model,
                 messages=messages,
                 temperature=self.temperature
@@ -315,7 +368,7 @@ class GPT(LLM_Base):
     def get_functions_response(self,messages:str|list[str],functions:list[dict]):
         model=self.get_model_name()
         try:
-            response = openai.ChatCompletion.create(
+            response = openai.chat.completions.create(
                 model=model,
                 messages=messages,
                 functions=functions,
