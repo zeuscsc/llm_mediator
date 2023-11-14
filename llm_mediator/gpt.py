@@ -49,11 +49,18 @@ class GPT(LLM_Base):
         @abstractmethod
         def get_extraction_path(self,chunk):
             pass
-        def extract_text_from_generator_chunk(self,chunk:ChatCompletionChunk):
-            node=chunk.choices[0]
+        def get_choice0(self,chunk:ChatCompletionChunk|dict):
+            if hasattr(chunk,"choices") and len(chunk.choices)>0:
+                return chunk.choices[0]
+            elif "choices" in chunk and len(chunk["choices"])>0:
+                return chunk["choices"][0]
+        def extract_text_from_generator_chunk(self,chunk:ChatCompletionChunk|dict):
+            node=self.get_choice0(chunk)
             extraction_path=self.get_extraction_path(chunk)
             if extraction_path is None:
                 return ""
+            if isinstance(chunk,dict):
+                return self.extract_text_from_dict_chunk(chunk,extraction_path)
             for key in extraction_path:
                 if hasattr(node,key) and getattr(node,key) is not None:
                     node = getattr(node,key)
@@ -61,33 +68,59 @@ class GPT(LLM_Base):
                     return ""
             return node
         def append_text_into_generator_chunk(self,chunk:ChatCompletionChunk,text):
-            node=chunk.choices[0]
+            node=self.get_choice0(chunk)
             extraction_path=self.get_extraction_path(chunk)
             if extraction_path is None:
                 return chunk
+            if isinstance(chunk,dict):
+                return self.append_text_into_dict_chunk(chunk,text,extraction_path)
             for key in extraction_path:
                 if hasattr(node,key) and getattr(node,key) is not None:
                     parent_node=node
                     node = getattr(node,key)
             if isinstance(node,str) and isinstance(text,str):
-                original_text=getattr(parent_node,extraction_path[-1])
-                current_key=extraction_path[-1]
-                targeted_text=original_text+text
                 setattr(parent_node,extraction_path[-1],getattr(parent_node,extraction_path[-1])+text)
+            return chunk
+        
+        def extract_text_from_dict_chunk(self,chunk,generator_extracting_path):
+            node=self.get_choice0(chunk)
+            for key in generator_extracting_path:
+                try:
+                    node = node[key]
+                except KeyError:
+                    return ""
+            return node
+        def append_text_into_dict_chunk(self,chunk,text,generator_extracting_path):
+            node=self.get_choice0(chunk)
+            for key in generator_extracting_path:
+                try:
+                    parent_node=node
+                    node = node[key]
+                except KeyError:
+                    return chunk
+            if isinstance(node,str) and isinstance(text,str):
+                parent_node[generator_extracting_path[-1]]+=text
             return chunk
         pass
     class AutoGeneratorExtractor(BaseGeneratorExtractor):
         @staticmethod
-        def get_extraction_path(chunk:ChatCompletionChunk):
-            if hasattr(chunk,"choices") and len(chunk.choices)>0:
-                choice:Choice=chunk.choices[0]
-                if hasattr(choice,"delta") \
-                    and hasattr(choice.delta,"content") and choice.delta.content is not None:
-                    return ["delta","content"]
-                elif hasattr(choice,"delta") \
-                    and hasattr(choice.delta,"function_call") and hasattr(choice.delta.function_call,"arguments")\
-                        and choice.delta.function_call.arguments is not None:
-                    return ["delta","function_call","arguments"]
+        def get_extraction_path(chunk:ChatCompletionChunk|dict):
+            text_path=["delta","content"]
+            functional_path=["delta","function_call","arguments"]
+            if isinstance(chunk,dict):
+                if "choices" in chunk and len(chunk["choices"])>0:
+                    choice=chunk["choices"][0]
+                    if "delta" in choice and "content" in choice["delta"]:
+                        return text_path
+                    elif "delta" in choice and "function_call" in choice["delta"] and "arguments" in choice["delta"]["function_call"]:
+                        return functional_path
+            if isinstance(chunk,ChatCompletionChunk):
+                if hasattr(chunk,"choices") and len(chunk.choices)>0:
+                    choice:Choice=chunk.choices[0]
+                    if hasattr(choice,"delta") and hasattr(choice.delta,"content") and choice.delta.content is not None:
+                        return text_path
+                    elif hasattr(choice,"delta") and hasattr(choice.delta,"function_call") and hasattr(choice.delta.function_call,"arguments") and choice.delta.function_call.arguments is not None:
+                        return functional_path
             return None
         pass
     
@@ -95,27 +128,6 @@ class GPT(LLM_Base):
         return completion_extractor().extract_text_from_generator_chunk(chunk)
     def append_text_into_chat_completion_chunk(chunk,text,completion_extractor:BaseGeneratorExtractor=AutoGeneratorExtractor,**_):
         return completion_extractor().append_text_into_generator_chunk(chunk,text)
-
-
-    def extract_text_from_generator_chunk(chunk,generator_extracting_path):
-        node=chunk
-        for key in generator_extracting_path:
-            try:
-                node = node[key]
-            except KeyError:
-                return ""
-        return node
-    def append_text_into_generator_chunk(chunk,text,generator_extracting_path):
-        node=chunk
-        for key in generator_extracting_path:
-            try:
-                parent_node=node
-                node = node[key]
-            except KeyError:
-                return chunk
-        if isinstance(node,str) and isinstance(text,str):
-            parent_node[generator_extracting_path[-1]]+=text
-        return chunk
     
     def get_embeddings(self,sentences:str|list[str]):
         origin_sentences_type=type(sentences)
