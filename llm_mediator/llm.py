@@ -151,8 +151,6 @@ class _LLM_Base(ABC):
     def get_embeddings(self,sentences:str|list[str])->np.ndarray:
         pass
     
-    def get_functions_response(self,messages:str|list[str],functions:list[dict]):
-        pass
     # endregion
     def set_event_listener(self,event_name:str,func:Callable[[Any], Any]):
         if event_name=="on_chunked":
@@ -314,7 +312,6 @@ class LLM_Base(_LLM_Base):
         pass
     pass
 class LLM:
-    
     def __init__(self,ModelClass:Type[LLM_Base],use_cache:bool=True,
                  on_each_response:Callable[[str,str,str,str,str], str]=None,
                  on_chunked:Callable[[str,str,str,str,str], str]=None) -> None:
@@ -393,7 +390,5 @@ I don't need any extra description in the JSON only give me the JSON.
         return self.model_class.get_conversation_response(messages)
     def get_embeddings(self,sentences:str|list[str])->np.ndarray:
         return self.model_class.get_embeddings(sentences)
-    def get_functions_response(self,messages:str|list[str],functions:list[dict]):
-        return self.model_class.get_functions_response(messages,functions)
     
     pass

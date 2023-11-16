@@ -8,13 +8,14 @@ Will cache the response for the same input text during debug and save money for 
 - [x] GPT-3.5-16k
 - [x] GPT-4
 - [x] GPT-4-32k
+- [ ] GPT-4-vision
 - [ ] LLaMA2
 - [ ] Falcon
 
 ## Quick Usage
 Install:
 ~~~shell
-pip install llm_mediator
+pip install LLM-Mediator
 # Install llm_mediator from github
 pip install git+https://github.com/zeuscsc/llm_mediator.git
 ~~~
@@ -26,6 +27,10 @@ model.model_class.set_model_name(model_name)
 response=model.get_response(system,assistant,user)
 ~~~
 Where `system`, `assistant`, `user` are the input text, and `response` is the output text.
+Or you can just follow the docs from OpenAi:
+~~python
+generator=model.get_chat_completion(messages=messages,functions=functions,function_call=function_call,stream=True,temperature=0,completion_extractor=GPT.AutoGeneratorExtractor,print_chunk=False)
+~~~
 ## Set Environment Variables
 Unix:
 ~~~shell Unix

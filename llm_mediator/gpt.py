@@ -33,10 +33,10 @@ class GPT(LLM_Base):
 
     def switch2tecky():
         openai.api_key = TECKY_API_KEY
-        openai.api_url = "https://api.gpt.tecky.ai/v1"
+        openai.base_url = "https://api.gpt.tecky.ai/v1/"
     def switch2openai():
         openai.api_key = OPENAI_API_KEY
-        openai.api_url = "https://api.openai.com/v1"
+        openai.base_url = "https://api.openai.com/v1/"
 
     def model_picker():
         if TECKY_API_KEY is not None and TECKY_API_KEY != "":
