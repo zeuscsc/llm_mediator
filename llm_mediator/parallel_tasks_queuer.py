@@ -44,6 +44,9 @@ def execute_queue(iterator:Iterator,threads_count:int=10,slience=True,waiting_ti
             except KeyboardInterrupt:
                 print("Main process terminated externally.")
                 break
+            except Exception as e:
+                print(e)
+                break
     for i in range(WORKERS_COUNT):
         Thread(target=worker, daemon=True).start()
     def start():
