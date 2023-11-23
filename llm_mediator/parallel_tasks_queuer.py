@@ -14,23 +14,36 @@ def execute_queue(iterator:Iterator,threads_count:int=10,slience=True,waiting_ti
     queue = Queue()
     def worker():
         while True:
-            row=queue.get()
-            task=None
-            if isinstance(row,tuple) or isinstance(row,list):
-                task=row[0]
-                parameter=row[1]
-            if isinstance(parameter,tuple) or isinstance(parameter,list):
-                args=parameter
-                kwargs={}
-            elif isinstance(parameter,dict):
-                args=[]
-                kwargs=parameter
-            if not slience:
-                print(f"Running {args}")
-            run_task(task,*args, **kwargs)
-            if not slience:
-                print(f"Task done.")
-            queue.task_done()
+            try:
+                row=queue.get()
+                task=None
+                if isinstance(row,tuple) or isinstance(row,list):
+                    task=row[0]
+                    parameters=row[1]
+                if isinstance(row,dict):
+                    if "task" in row:task=row["task"]
+                    if "function" in row:task=row["function"]
+                    if "func" in row:task=row["func"]
+                    if "parameter" in row:parameters=row["parameter"]
+                    if "parameters" in row:parameters=row["parameters"]
+                    if "params" in row:parameters=row["params"]
+                    if "args" in row:parameters=row["args"]
+
+                if isinstance(parameters,tuple) or isinstance(parameters,list):
+                    args=parameters
+                    kwargs={}
+                elif isinstance(parameters,dict):
+                    args=[]
+                    kwargs=parameters
+                if not slience:
+                    print(f"Running {args}")
+                run_task(task,*args, **kwargs)
+                if not slience:
+                    print(f"Task done.")
+                queue.task_done()
+            except KeyboardInterrupt:
+                print("Main process terminated externally.")
+                break
     for i in range(WORKERS_COUNT):
         Thread(target=worker, daemon=True).start()
     def start():
