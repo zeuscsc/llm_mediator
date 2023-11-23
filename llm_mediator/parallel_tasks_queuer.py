@@ -13,7 +13,8 @@ def execute_queue(iterator:Iterator,threads_count:int=10,slience=True,waiting_ti
     WORKERS_COUNT=threads_count
     queue = Queue()
     def worker():
-        while True:
+        continue_running=True
+        while continue_running:
             try:
                 row=queue.get()
                 task=None
@@ -44,9 +45,9 @@ def execute_queue(iterator:Iterator,threads_count:int=10,slience=True,waiting_ti
             except KeyboardInterrupt:
                 print("Main process terminated externally.")
                 break
-            except Exception as e:
-                print(e)
-                break
+            except BaseException as e:
+                continue_running=False
+                raise e
     for i in range(WORKERS_COUNT):
         Thread(target=worker, daemon=True).start()
     def start():
