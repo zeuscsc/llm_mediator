@@ -204,7 +204,7 @@ class GPT(LLM_Base):
             text=GPT.extract_text_from_chat_completion_chunk(chunk,**kwargs)
             if first_chunk is None and text is not None and text != "":
                 first_chunk=chunk
-            if first_chunk is not None and text is not None and text != "":
+            elif first_chunk is not None and text is not None and text != "":
                 first_chunk=GPT.append_text_into_chat_completion_chunk(first_chunk,text,**kwargs)
             last_chunk=chunk
             pass
