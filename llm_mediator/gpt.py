@@ -31,11 +31,17 @@ class GPT(LLM_Base):
     gpt_error_delay=2
     temperature=0
 
-    def switch2tecky():
-        openai.api_key = TECKY_API_KEY
+    def switch2tecky(api_key=None):
+        if api_key is not None:
+            openai.api_key = api_key
+        else:
+            openai.api_key = TECKY_API_KEY
         openai.base_url = "https://api.gpt.tecky.ai/v1/"
-    def switch2openai():
-        openai.api_key = OPENAI_API_KEY
+    def switch2openai(api_key=None):
+        if api_key is not None:
+            openai.api_key = api_key
+        else:
+            openai.api_key = OPENAI_API_KEY
         openai.base_url = "https://api.openai.com/v1/"
 
     def model_picker():
