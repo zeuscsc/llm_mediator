@@ -202,9 +202,10 @@ class GPT(LLM_Base):
         last_chunk=None
         for chunk in chunks:
             text=GPT.extract_text_from_chat_completion_chunk(chunk,**kwargs)
-            if first_chunk is None and text is not None:
+            if first_chunk is None and text is not None and text != "":
                 first_chunk=chunk
-            first_chunk=GPT.append_text_into_chat_completion_chunk(first_chunk,text,**kwargs)
+            if first_chunk is not None and text is not None and text != "":
+                first_chunk=GPT.append_text_into_chat_completion_chunk(first_chunk,text,**kwargs)
             last_chunk=chunk
             pass
         if first_chunk is not None and last_chunk is not None:
