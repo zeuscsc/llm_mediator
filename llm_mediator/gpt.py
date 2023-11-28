@@ -44,6 +44,27 @@ class GPT(LLM_Base):
             openai.api_key = OPENAI_API_KEY
         openai.base_url = "https://api.openai.com/v1/"
 
+    def get_4k_model_instant():
+        from .llm import LLM
+        model=LLM(GPT)
+        model.set_model_name("gpt-3.5-turbo")
+        return model
+    def get_8k_model_instant():
+        from .llm import LLM
+        model=LLM(GPT)
+        model.set_model_name("gpt-4")
+        return model
+    def get_16k_model_instant():
+        from .llm import LLM
+        model=LLM(GPT)
+        model.set_model_name("gpt-3.5-turbo-16k")
+        return model
+    def get_32k_model_instant():
+        from .llm import LLM
+        model=LLM(GPT)
+        model.set_model_name("gpt-4-32k")
+        return model
+
     def model_picker():
         if TECKY_API_KEY is not None and TECKY_API_KEY != "":
             return GPT4_MODEL
@@ -51,6 +72,7 @@ class GPT(LLM_Base):
             return GPT3_MODEL
         else:
             return None
+    
     class BaseGeneratorExtractor(ABC):
         @abstractmethod
         def get_extraction_path(self,chunk):
