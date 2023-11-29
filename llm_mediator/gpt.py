@@ -2,6 +2,7 @@ from typing import Any, Generator
 from .llm import LLM_Base,ON_TOKENS_OVERSIZED,CallStack,calculate_md5
 import openai
 from openai.types.chat.chat_completion_chunk import ChatCompletionChunk,Choice
+from openai.types.chat.chat_completion import ChatCompletion
 from time import sleep
 import time
 import os
@@ -72,7 +73,7 @@ class GPT(LLM_Base):
             return GPT3_MODEL
         else:
             return None
-    
+
     class BaseGeneratorExtractor(ABC):
         @abstractmethod
         def get_extraction_path(self,chunk):
@@ -189,7 +190,19 @@ class GPT(LLM_Base):
         openai_kwargs=kwargs.copy()
         openai_kwargs.pop("print_chunk",None)
         openai_kwargs.pop("completion_extractor",None)
-        response:ChatCompletionChunk = openai.chat.completions.create(*args,model=model,stream=True,**openai_kwargs)
+        response:ChatCompletion = openai.chat.completions.create(*args,model=model,**openai_kwargs)
+        hashed_request=self.get_request_hash(model,*args,**kwargs)
+        self.save_chat_completion_cache(model,hashed_request,response.model_dump())
+        return response
+    def get_chat_completion_from_openai_stream(self,*args,**kwargs):
+        stream=kwargs["stream"]
+        model=self.get_model_name()
+        openai_kwargs=kwargs.copy()
+        openai_kwargs.pop("print_chunk",None)
+        openai_kwargs.pop("completion_extractor",None)
+        response:ChatCompletionChunk|ChatCompletion = openai.chat.completions.create(*args,model=model,**openai_kwargs)
+        if not stream:
+            return response
         chunks:list[ChatCompletionChunk]=[]
         for chunk in response:
             yield chunk
@@ -212,7 +225,16 @@ class GPT(LLM_Base):
             chunks=[first_chunk,last_chunk]
         hashed_request=self.get_request_hash(model,*args,**kwargs)
         output_chunks=[json.loads(chunk.model_dump_json()) for chunk in chunks]
-        self.save_chat_completion_cache(model,hashed_request,output_chunks)
+        self.save_chat_completion_cache_stream(model,hashed_request,output_chunks)
+    def get_chat_completion_from_cache_stream(self,hashed_request=None,*args,**kwargs):
+        model=self.get_model_name()
+        if hashed_request is None:
+            hashed_request=self.get_request_hash(model,*args,**kwargs)
+        if self.have_chat_completion_cache_stream(hashed_request):
+            cache=self.load_chat_completion_cache_stream(hashed_request)
+            return cache
+        else:
+            return None
     def get_chat_completion_from_cache(self,hashed_request=None,*args,**kwargs):
         model=self.get_model_name()
         if hashed_request is None:
@@ -224,23 +246,24 @@ class GPT(LLM_Base):
             return None
     def get_chat_completion(self,stream=False,completion_extractor=AutoGeneratorExtractor,*args,**kwargs):
         kwargs["completion_extractor"]=completion_extractor
+        kwargs["stream"]=stream
         model=self.get_model_name()
         if model is None:
             raise Exception("No API key found for OpenAI or Tecky")
         generator=None
         hashed_request=self.get_request_hash(model,*args,**kwargs)
-        if self.have_chat_completion_cache(hashed_request,*args,**kwargs) and self.use_cache:
-            generator = self.get_chat_completion_from_cache(hashed_request,*args,**kwargs)
-        else:
-            generator = self.get_chat_completion_from_openai(*args,**kwargs)
-        if stream is True:
+        if stream:
+            if self.have_chat_completion_cache_stream(hashed_request,*args,**kwargs) and self.use_cache:
+                generator = self.get_chat_completion_from_cache_stream(hashed_request,*args,**kwargs)
+            else:
+                generator = self.get_chat_completion_from_openai_stream(*args,**kwargs)
             return generator
         else:
-            text=""
-            for chunk in generator:
-                text+=GPT.extract_text_from_chat_completion_chunk(chunk)
-                pass
-            return text
+            if self.have_chat_completion_cache(hashed_request,*args,**kwargs) and self.use_cache:
+                response = self.get_chat_completion_from_cache(hashed_request,*args,**kwargs)
+            else:
+                response = self.get_chat_completion_from_openai(*args,**kwargs)
+            return response
     def detect_if_tokens_oversized(self,e):
         return (re.search(r"This model's maximum context length is", str(e)) is not None and \
             re.search(r"tokens", str(e)) is not None and \

@@ -5,7 +5,7 @@ import hashlib
 import glob
 from abc import ABC, abstractmethod
 from typing import Any, Callable, Type,Generator
-from .folders import LLM_RESPONSE_CACHE_FOLDER,LLM_STREAM_RESPONSE_CACHE_FOLDER,LLM_CONVERSATION_STREAM_CACHE_FOLDER,LLM_CONVERSATION_CACHE_FOLDER,LLM_CHAT_COMPLETION_FOLDER
+from .folders import LLM_RESPONSE_CACHE_FOLDER,LLM_STREAM_RESPONSE_CACHE_FOLDER,LLM_CONVERSATION_STREAM_CACHE_FOLDER,LLM_CONVERSATION_CACHE_FOLDER,LLM_CHAT_COMPLETION_FOLDER,LLM_CHAT_COMPLETION_STREAM_FOLDER
 import numpy as np
 
 ON_TOKENS_OVERSIZED="on_tokens_oversized"
@@ -285,8 +285,29 @@ class _LLM_Base(ABC):
         if hashed_request is None:
             hashed_request=self.get_request_hash(*args,**kwargs)
         return os.path.exists(f"{LLM_CHAT_COMPLETION_FOLDER}/{hashed_request}")
+    def have_chat_completion_cache_stream(self,hashed_request=None,*args,**kwargs):
+        if hashed_request is None:
+            hashed_request=self.get_request_hash(*args,**kwargs)
+        return os.path.exists(f"{LLM_CHAT_COMPLETION_STREAM_FOLDER}/{hashed_request}")
+
+    def save_chat_completion_cache_stream(self,*args,**kwargs):
+        LLM_Base.save_cache(*args,**kwargs,folder_path=LLM_CHAT_COMPLETION_STREAM_FOLDER)
     def save_chat_completion_cache(self,*args,**kwargs):
         LLM_Base.save_cache(*args,**kwargs,folder_path=LLM_CHAT_COMPLETION_FOLDER)
+    def load_chat_completion_cache_stream(self,hashed_request=None,*args,**kwargs):
+        if hashed_request is None:
+            model=self.get_model_name()
+            hashed_request=self.get_request_hash(model,*args,**kwargs)
+        if self.have_chat_completion_cache_stream(hashed_request,*args,**kwargs):
+            matching_files = glob.glob(f"{LLM_CHAT_COMPLETION_STREAM_FOLDER}/{hashed_request}/*.json")
+            matching_files=sorted(matching_files, key=lambda x: int(os.path.basename(x).split(".")[0]))
+            for path in matching_files:
+                with open(path, "r",encoding="utf8") as chat_caches_file:
+                    chat_caches = json.load(chat_caches_file)
+                    for chat_cache in chat_caches:
+                        yield chat_cache
+        else:
+            return None
     def load_chat_completion_cache(self,hashed_request=None,*args,**kwargs):
         if hashed_request is None:
             model=self.get_model_name()
@@ -297,8 +318,7 @@ class _LLM_Base(ABC):
             for path in matching_files:
                 with open(path, "r",encoding="utf8") as chat_caches_file:
                     chat_caches = json.load(chat_caches_file)
-                    for chat_cache in chat_caches:
-                        yield chat_cache
+                    return chat_caches
         else:
             return None
     pass
@@ -311,6 +331,64 @@ class LLM_Base(_LLM_Base):
         pass
     pass
 class LLM:
+    class DictWrapper:
+        def __init__(self, dictionary):
+            self.__dict__ = {}
+            for key, value in dictionary.items():
+                if isinstance(value, dict):
+                    self.__dict__[key] = LLM.DictWrapper(value)
+                elif isinstance(value, list):
+                    self.__dict__[key] = LLM.ListWrapper(value)
+                else:
+                    self.__dict__[key] = value
+
+        def __getattr__(self, key):
+            try:
+                return self.__dict__[key]
+            except KeyError:
+                raise AttributeError(key)
+
+        def __setattr__(self, key, value):
+            self.__dict__[key] = value
+        def to_dict(self):
+            result = {}
+            for key, value in self.__dict__.items():
+                if isinstance(value, LLM.DictWrapper):
+                    result[key] = value.to_dict()
+                elif isinstance(value, LLM.ListWrapper):
+                    result[key] = value.to_list()
+                else:
+                    result[key] = value
+            return result
+        pass
+    class ListWrapper:
+        def __init__(self, lst):
+            self.__list__ = []
+            for item in lst:
+                if isinstance(item, dict):
+                    self.__list__.append(LLM.DictWrapper(item))
+                elif isinstance(item, list):
+                    self.__list__.append(LLM.ListWrapper(item))
+                else:
+                    self.__list__.append(item)
+
+        def __getitem__(self, index):
+            return self.__list__[index]
+
+        def __len__(self):
+            return len(self.__list__)
+        def to_list(self):
+            result = []
+            for item in self.__list__:
+                if isinstance(item, LLM.DictWrapper):
+                    result.append(item.to_dict())
+                elif isinstance(item, LLM.ListWrapper):
+                    result.append(item.to_list())
+                else:
+                    result.append(item)
+            return result
+        pass
+    
     def __init__(self,ModelClass:Type[LLM_Base],use_cache:bool=True,
                  on_each_response:Callable[[str,str,str,str,str], str]=None,
                  on_chunked:Callable[[str,str,str,str,str], str]=None) -> None:

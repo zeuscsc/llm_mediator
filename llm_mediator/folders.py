@@ -7,6 +7,7 @@ def reset_root_folder(path:str):
         LLM_CONVERSATION_STREAM_CACHE_FOLDER,\
         LLM_CONVERSATION_CACHE_FOLDER,\
         LLM_CHAT_COMPLETION_FOLDER,\
+        LLM_CHAT_COMPLETION_STREAM_FOLDER,\
         LLM_MODELS_FOLDER
     ROOT_FOLDER=path
     LLM_CACHES_FOLDER = os.path.join(ROOT_FOLDER,"llm_caches")
@@ -14,7 +15,8 @@ def reset_root_folder(path:str):
     LLM_STREAM_RESPONSE_CACHE_FOLDER = os.path.join(LLM_CACHES_FOLDER,"llm_stream_response_cache")
     LLM_CONVERSATION_STREAM_CACHE_FOLDER = os.path.join(LLM_CACHES_FOLDER,"llm_conversation_stream_cache")
     LLM_CONVERSATION_CACHE_FOLDER = os.path.join(LLM_CACHES_FOLDER,"llm_conversation_cache")
-    LLM_CHAT_COMPLETION_FOLDER = os.path.join(LLM_CACHES_FOLDER,"llm_chat_completion")
+    LLM_CHAT_COMPLETION_FOLDER = os.path.join(LLM_CACHES_FOLDER,"llm_chat_completion_chunk")
+    LLM_CHAT_COMPLETION_STREAM_FOLDER = os.path.join(LLM_CACHES_FOLDER,"llm_chat_completion_stream")
     LLM_MODELS_FOLDER = os.path.join(ROOT_FOLDER,"llm_models")
 
 reset_root_folder(os.getcwd())
