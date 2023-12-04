@@ -5,7 +5,7 @@ import hashlib
 import glob
 from abc import ABC, abstractmethod
 from typing import Any, Callable, Type,Generator
-from .folders import LLM_RESPONSE_CACHE_FOLDER,LLM_STREAM_RESPONSE_CACHE_FOLDER,LLM_CONVERSATION_STREAM_CACHE_FOLDER,LLM_CONVERSATION_CACHE_FOLDER,LLM_CHAT_COMPLETION_FOLDER,LLM_CHAT_COMPLETION_STREAM_FOLDER
+from .folders import *
 import numpy as np
 
 ON_TOKENS_OVERSIZED="on_tokens_oversized"
@@ -290,6 +290,8 @@ class _LLM_Base(ABC):
             hashed_request=self.get_request_hash(*args,**kwargs)
         return os.path.exists(f"{LLM_CHAT_COMPLETION_STREAM_FOLDER}/{hashed_request}")
 
+    def save_chat_completion_questions(self,*args,**kwargs):
+        LLM_Base.save_cache(*args,**kwargs,folder_path=LLM_CHAT_COMPLETION_QUESTIONS_FOLDER)
     def save_chat_completion_cache_stream(self,*args,**kwargs):
         LLM_Base.save_cache(*args,**kwargs,folder_path=LLM_CHAT_COMPLETION_STREAM_FOLDER)
     def save_chat_completion_cache(self,*args,**kwargs):

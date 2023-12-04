@@ -192,6 +192,7 @@ class GPT(LLM_Base):
         openai_kwargs.pop("completion_extractor",None)
         response:ChatCompletion = openai.chat.completions.create(*args,model=model,**openai_kwargs)
         hashed_request=self.get_request_hash(model,*args,**kwargs)
+        self.save_chat_completion_questions(model,hashed_request,openai_kwargs)
         self.save_chat_completion_cache(model,hashed_request,response.model_dump())
         return response
     def get_chat_completion_from_openai_stream(self,*args,**kwargs):
@@ -225,6 +226,7 @@ class GPT(LLM_Base):
             chunks=[first_chunk,last_chunk]
         hashed_request=self.get_request_hash(model,*args,**kwargs)
         output_chunks=[json.loads(chunk.model_dump_json()) for chunk in chunks]
+        self.save_chat_completion_questions(model,hashed_request,openai_kwargs)
         self.save_chat_completion_cache_stream(model,hashed_request,output_chunks)
     def get_chat_completion_from_cache_stream(self,hashed_request=None,*args,**kwargs):
         model=self.get_model_name()
