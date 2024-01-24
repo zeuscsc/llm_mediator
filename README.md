@@ -9,10 +9,10 @@ Will cache the response for the same input text during debug and save money for 
 - [x] GPT-4
 - [x] GPT-4-32k
 - [ ] GPT-4-vision
-- [ ] LLaMA2
-- [ ] Falcon
+- [ ] DeepSeek-Gradio-API (Chinese LLM Gradio API)
+- [ ] DeepSeek (Chinese LLM)
 
-## Quick Usage
+## Quick Usage for
 Install:
 ~~~shell
 pip install LLM-Mediator

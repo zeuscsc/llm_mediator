@@ -136,6 +136,7 @@ class GPT(LLM_Base):
         def get_extraction_path(chunk:ChatCompletionChunk|dict):
             text_path=["delta","content"]
             functional_path=["delta","function_call","arguments"]
+            tools_path=["delta","tool_calls","function","arguments"]
             if isinstance(chunk,dict):
                 if "choices" in chunk and len(chunk["choices"])>0:
                     choice=chunk["choices"][0]
@@ -146,6 +147,12 @@ class GPT(LLM_Base):
                         if function_call is not None:
                             if "arguments" in choice["delta"]["function_call"]:
                                 return functional_path
+                    elif "delta" in choice and "tool_calls" in choice["delta"]:
+                        tool_calls=choice["delta"]["tool_calls"]
+                        if tool_calls is not None:
+                            if "function" in tool_calls:
+                                if "arguments" in tool_calls["function"]:
+                                    return tools_path
             if isinstance(chunk,ChatCompletionChunk):
                 if hasattr(chunk,"choices") and len(chunk.choices)>0:
                     choice:Choice=chunk.choices[0]
@@ -153,6 +160,8 @@ class GPT(LLM_Base):
                         return text_path
                     elif hasattr(choice,"delta") and hasattr(choice.delta,"function_call") and hasattr(choice.delta.function_call,"arguments") and choice.delta.function_call.arguments is not None:
                         return functional_path
+                    elif hasattr(choice,"delta") and hasattr(choice.delta,"tool_calls") and choice.delta.tool_calls is not None:
+                        return tools_path
             return None
         pass
     
