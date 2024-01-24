@@ -136,32 +136,28 @@ class GPT(LLM_Base):
         def get_extraction_path(chunk:ChatCompletionChunk|dict):
             text_path=["delta","content"]
             functional_path=["delta","function_call","arguments"]
-            tools_path=["delta","tool_calls","function","arguments"]
+            tools_path=["delta","tool_calls",0,"function","arguments"]
+            if isinstance(chunk,ChatCompletionChunk):
+                chunk:dict=chunk.model_dump()
             if isinstance(chunk,dict):
                 if "choices" in chunk and len(chunk["choices"])>0:
                     choice=chunk["choices"][0]
-                    if "delta" in choice and "content" in choice["delta"] and choice["delta"]["content"] is not None:
-                        return text_path
-                    elif "delta" in choice and "function_call" in choice["delta"]:
-                        function_call=choice["delta"]["function_call"]
-                        if function_call is not None:
-                            if "arguments" in choice["delta"]["function_call"]:
+                    if "delta" in choice:
+                        delta=choice["delta"]
+                        if "content" in delta and delta["content"] is not None:
+                            return text_path
+                        elif "function_call" in delta and delta["function_call"] is not None:
+                            function_call=delta["function_call"]
+                            if "arguments" in function_call and function_call["arguments"] is not None:
                                 return functional_path
-                    elif "delta" in choice and "tool_calls" in choice["delta"]:
-                        tool_calls=choice["delta"]["tool_calls"]
-                        if tool_calls is not None:
-                            if "function" in tool_calls:
-                                if "arguments" in tool_calls["function"]:
-                                    return tools_path
-            if isinstance(chunk,ChatCompletionChunk):
-                if hasattr(chunk,"choices") and len(chunk.choices)>0:
-                    choice:Choice=chunk.choices[0]
-                    if hasattr(choice,"delta") and hasattr(choice.delta,"content") and choice.delta.content is not None:
-                        return text_path
-                    elif hasattr(choice,"delta") and hasattr(choice.delta,"function_call") and hasattr(choice.delta.function_call,"arguments") and choice.delta.function_call.arguments is not None:
-                        return functional_path
-                    elif hasattr(choice,"delta") and hasattr(choice.delta,"tool_calls") and choice.delta.tool_calls is not None:
-                        return tools_path
+                        elif "tool_calls" in delta and delta["tool_calls"] is not None:
+                            tool_calls=delta["tool_calls"]
+                            if len(tool_calls)>0:
+                                tool_call=tool_calls[0]
+                                if "function" in tool_call and tool_call["function"] is not None:
+                                    function=tool_call["function"]
+                                    if "arguments" in function and function["arguments"] is not None:
+                                        return tools_path
             return None
         pass
     
