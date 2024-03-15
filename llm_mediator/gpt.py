@@ -32,6 +32,41 @@ class GPT(LLM_Base):
     gpt_error_delay=2
     temperature=0
 
+    def extract_text_from_generator(generator):
+        text=""
+        for chunk in generator:
+            text+=GPT.extract_text_from_chat_completion_chunk(chunk)
+            pass
+        return text
+    def extract_json_str_from_generator(generator):
+        json_str=""
+        for chunk in generator:
+            text=GPT.extract_text_from_chat_completion_chunk(chunk)
+            json_str+=text
+            pass
+        return json_str
+    def extract_json_from_generator(generator):
+        json_str=GPT.extract_json_str_from_generator(generator)
+        try:
+            return json.loads(json_str)
+        except Exception as e:
+            print(f"Failed to parse json: {json_str}")
+            json_str = json_str.replace('\n}{', '},{')
+            json_str = '[' + json_str + ']'
+            try:
+                return json.loads(json_str)[-1]
+            except Exception as e:
+                print(f"Failed to parse json: {json_str}")
+                raise e
+    def is_last_chunk(chunk:ChatCompletionChunk|dict):
+        if isinstance(chunk,ChatCompletionChunk):
+            chunk=chunk.model_dump()
+        if "choices" in chunk:
+            if len(chunk["choices"])>0:
+                if "finish_reason" in chunk["choices"][0]:
+                    return True
+        return False
+    
     def switch2tecky(api_key=None):
         if api_key is not None:
             openai.api_key = api_key
@@ -54,6 +89,11 @@ class GPT(LLM_Base):
         from .llm import LLM
         model=LLM(GPT)
         model.set_model_name("gpt-4")
+        return model
+    def get_8k_turbo_model_instant():
+        from .llm import LLM
+        model=LLM(GPT)
+        model.set_model_name("gpt-4-turbo-preview")
         return model
     def get_16k_model_instant():
         from .llm import LLM
